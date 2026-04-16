@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build outputs
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+
+# Frontend build
+apps/frontend/dist/
+
+# Backend build
+apps/backend/dist/
+
+# Prisma generated client (regenerated on install)
+apps/backend/node_modules/.prisma/
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+apps/backend/.env.production
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+!.vscode/extensions.json
+.idea/
+
+# Coverage
+coverage/
+
+# Next
+.next/
+
+# Vite
+apps/frontend/.vite/

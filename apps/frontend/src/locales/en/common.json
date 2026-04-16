@@ -1,0 +1,326 @@
+{
+  "app_name": "AWDMS — Academic Workload",
+  "nav": {
+    "dashboard": "Dashboard",
+    "teachers": "Teachers",
+    "directions": "Directions",
+    "groups": "Groups",
+    "subjects": "Subjects",
+    "offerings": "Subject offerings",
+    "workload": "Workload",
+    "streams": "Streams",
+    "formulas": "Formulas",
+    "monitoring": "Monitoring",
+    "statistics": "Statistics",
+    "reports": "Reports",
+    "logout": "Logout"
+  },
+  "auth": {
+    "login": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "invalid_credentials": "Invalid email or password"
+  },
+  "status": {
+    "assigned": "Assigned",
+    "unassigned": "Unassigned",
+    "invalid": "Invalid",
+    "draft": "Draft",
+    "ready": "Ready"
+  },
+  "level": { "bachelor": "Bachelor", "master": "Master" },
+  "studyType": { "full_time": "Full-time", "part_time": "Part-time" },
+  "language": { "uzbek": "Uzbek", "russian": "Russian" },
+  "academicTerm": { "fall": "Fall", "spring": "Spring" },
+  "workloadType": {
+    "lecture": "Lecture",
+    "practice": "Practice",
+    "lab": "Lab",
+    "control": "Assessment",
+    "course_project": "Course project",
+    "internship": "Internship",
+    "prediploma": "Pre-diploma",
+    "VQR": "VQR",
+    "MD": "MD",
+    "NDP": "NDP",
+    "NS": "NS"
+  },
+  "calculationMode": {
+    "coefficient_based": "Coefficient-based",
+    "fixed_per_student": "Fixed per student",
+    "fixed_per_group": "Fixed per group",
+    "fixed_value": "Fixed value"
+  },
+  "toasts": {
+    "created": "Created {{name}}",
+    "updated": "Saved changes to {{name}}",
+    "deleted": "Item deleted",
+    "assigned": "Assigned to {{name}}",
+    "unassigned": "Assignment cleared",
+    "generated": "Generated {{created}} new items · skipped {{skipped}}",
+    "stream_created": "Stream created",
+    "stream_updated": "Stream updated"
+  },
+  "common": {
+    "loading": "Loading…",
+    "empty": "No data",
+    "search": "Search",
+    "filter": "Filter",
+    "export_excel": "Export to Excel",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "actions": "Actions",
+    "page_of": "Page {{page}} of {{total}}"
+  },
+  "teachers": {
+    "add": "Add teacher",
+    "add_title": "Add teacher",
+    "edit_title": "Edit teacher",
+    "degree_badge": "Degree",
+    "total_suffix": "total",
+    "status_active": "Active",
+    "status_inactive": "Inactive",
+    "confirm_delete": "Remove {{name}}? They will be deactivated if they have existing workload.",
+    "fields": {
+      "fullName": "Full name",
+      "position": "Position",
+      "degreeName": "Academic degree",
+      "degreeName_hint": "e.g. PhD in Computer Science, Associate Professor",
+      "annualNorm": "Annual norm (hours)",
+      "hasScientificDegree": "Has scientific degree",
+      "isActive": "Active",
+      "status": "Status"
+    }
+  },
+  "directions": {
+    "add": "Add direction",
+    "add_title": "Add direction",
+    "edit_title": "Edit direction",
+    "total_suffix": "directions",
+    "all_levels": "All levels",
+    "confirm_delete": "Delete direction {{name}}? This fails if any groups or subjects still reference it.",
+    "fields": {
+      "name": "Name",
+      "code": "Code",
+      "code_hint": "Short unique code, e.g. 5A330200",
+      "level": "Level",
+      "groups": "Groups",
+      "subjects": "Subjects"
+    }
+  },
+  "groups": {
+    "add": "Add group",
+    "add_title": "Add group",
+    "edit_title": "Edit group",
+    "total_suffix": "groups",
+    "all_directions": "All directions",
+    "all_languages": "All languages",
+    "pick_direction": "Select a direction…",
+    "confirm_delete": "Delete group {{name}}? This fails if the group is attached to a subject, stream, or workload item.",
+    "fields": {
+      "name": "Group name",
+      "direction": "Direction",
+      "level_studyType": "Level / Study type",
+      "courseYear": "Course year",
+      "semester": "Semester",
+      "semesterNumber": "Semester number",
+      "academicTerm": "Term",
+      "language": "Language",
+      "studentCount": "Students",
+      "studyType": "Study type"
+    }
+  },
+  "subjects": {
+    "add": "Add subject",
+    "add_title": "Add subject",
+    "edit_title": "Edit subject",
+    "total_suffix": "subjects",
+    "confirm_delete": "Delete subject {{name}}? This fails if any offerings reference it.",
+    "fields": {
+      "name": "Subject name",
+      "code": "Code",
+      "code_hint": "Optional short reference, e.g. CS101",
+      "direction": "Direction",
+      "level": "Level",
+      "offerings": "Offerings",
+      "isActive": "Active"
+    }
+  },
+  "offerings": {
+    "add": "Add offering",
+    "add_title": "Add subject offering",
+    "edit_title": "Edit subject offering",
+    "total_suffix": "offerings",
+    "all_terms": "All terms",
+    "pick_subject": "Select a subject…",
+    "pick_subject_first": "Pick a subject first to load matching groups.",
+    "no_matching_groups": "No groups match this subject's direction and level.",
+    "no_groups": "No groups linked",
+    "selected_count": "{{count}} selected",
+    "students_short": "stud.",
+    "confirm_delete": "Delete offering of {{name}} ({{term}})? This fails if streams or workload items exist.",
+    "fields": {
+      "subject": "Subject",
+      "direction": "Direction",
+      "placement": "Placement",
+      "groups": "Linked groups",
+      "studentsTotal": "Students",
+      "studyType": "Study type",
+      "courseYear": "Course year",
+      "semesterNumber": "Semester number",
+      "academicTerm": "Term",
+      "isActive": "Active"
+    }
+  },
+  "streams": {
+    "add": "Add stream",
+    "add_title": "Add lecture stream",
+    "edit_title": "Edit lecture stream",
+    "total_suffix": "streams",
+    "all_statuses": "All statuses",
+    "pick_offering": "Select an offering…",
+    "pick_offering_first": "Pick a subject offering first to see its groups.",
+    "pick_first_hint": "Pick the first group to lock the stream's language.",
+    "locked_language": "Language locked to {{lang}}",
+    "different_language": "Different language",
+    "no_groups": "This offering has no groups linked.",
+    "no_teacher": "— not assigned —",
+    "total_students": "{{count}} students",
+    "group_count": "{{count}} groups",
+    "confirm_delete": "Delete the {{name}} stream? This fails if workload items reference it.",
+    "fields": {
+      "offering": "Subject offering",
+      "subject": "Subject",
+      "placement": "Placement",
+      "language": "Language",
+      "groups": "Groups",
+      "students": "Students",
+      "teacher": "Teacher",
+      "status": "Status"
+    }
+  },
+  "category": {
+    "auditorium": "In-class",
+    "non_auditorium": "Out-of-class"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "kpi": {
+      "items": "Items",
+      "totalHours": "Total hours",
+      "assigned": "Assigned",
+      "unassigned": "Unassigned"
+    },
+    "category": { "title": "Hours by category" },
+    "byType": { "title": "Hours by workload type" },
+    "teacherLoad": {
+      "title": "Teacher load vs annual norm",
+      "assigned": "Assigned hours",
+      "norm": "Annual norm",
+      "over": "Over norm",
+      "norm_line": "top norm"
+    },
+    "overNorm": {
+      "title": "Over-norm teachers ({{count}})"
+    }
+  },
+  "my_workload": {
+    "title": "My workload",
+    "annual": "Annual total",
+    "fall": "Fall semester",
+    "spring": "Spring semester",
+    "category_split": "In-class / out-of-class",
+    "category_hint": "Hours split by type",
+    "norm_hint": "of {{norm}}h norm ({{pct}}%)",
+    "items_title": "Assigned items",
+    "items": "items",
+    "empty": "You have no assigned workload items yet."
+  },
+  "workload": {
+    "total_suffix": "items",
+    "all_years": "All years",
+    "all_types": "All types",
+    "no_teacher": "— not assigned —",
+    "assign_action": "Assign",
+    "reassign": "Reassign",
+    "unassign": "Unassign",
+    "planned": "planned",
+    "requires_degree": "Degree required",
+    "stream_of": "Stream of",
+    "group": "Group",
+    "confirm_delete": "Delete this workload item? Assignment history will be lost.",
+    "kpi": {
+      "total": "Items",
+      "auditorium": "In-class hours",
+      "non_auditorium": "Out-of-class hours",
+      "unassigned": "Unassigned"
+    },
+    "fields": {
+      "subject": "Subject",
+      "type": "Type",
+      "scope": "Scope",
+      "students": "Students",
+      "hours": "Hours",
+      "teacher": "Teacher",
+      "status": "Status"
+    },
+    "export": {
+      "needs_year": "Select an academic year before exporting."
+    },
+    "generate": {
+      "button": "Generate from offerings",
+      "title": "Generate workload items",
+      "year": "Academic year",
+      "pick_year": "Select a year…",
+      "offerings": "Subject offerings",
+      "hint": "Leave empty to generate for every active offering. Existing items are left untouched.",
+      "select_all": "Select all",
+      "clear": "Clear",
+      "run": "Generate",
+      "result": "Created {{created}} new items · skipped {{skipped}} existing."
+    },
+    "assign": {
+      "title": "Assign teacher",
+      "teacher": "Teacher",
+      "pick_teacher": "Select a teacher…",
+      "submit": "Save assignment",
+      "ok": "Annual norm: {{norm}} h — looks good.",
+      "degree_mismatch": "⚠ {{type}} items require a teacher with a scientific degree (Rule 13). This assignment will be rejected by the server.",
+      "degree_mismatch_short": "Degree mismatch (Rule 13)",
+      "invalid": "Invalid"
+    }
+  },
+  "formulas": {
+    "add": "Add formula",
+    "add_title": "Add formula",
+    "edit_title": "Edit formula",
+    "total_suffix": "formulas",
+    "all_scopes": "All scopes",
+    "confirm_delete": "Delete formula {{name}}? It will be deactivated instead if any workload item uses it.",
+    "fields": {
+      "name": "Name",
+      "scopeType": "Scope",
+      "level": "Level",
+      "studyType": "Study type",
+      "calculationMode": "Calculation mode",
+      "baseHours": "Base hours",
+      "baseHours_hint": "Base (fixed) hours added to each group",
+      "coefficientPerStudent": "Hours per student",
+      "fixedHoursPerStudent": "Hours per student",
+      "fixedHoursPerStudent_hint": "Total = hours × student count",
+      "fixedHoursPerGroup": "Hours per group",
+      "fixedValue": "Fixed hours",
+      "fixedValue_hint": "A single value applied regardless of students/groups",
+      "effectiveFrom": "Effective from",
+      "context": "Context",
+      "parameters": "Parameters",
+      "status": "Status",
+      "isActive": "Active"
+    }
+  }
+}

@@ -1,0 +1,326 @@
+{
+  "app_name": "AWDMS — O'quv yuklamasi",
+  "nav": {
+    "dashboard": "Bosh sahifa",
+    "teachers": "O'qituvchilar",
+    "directions": "Yo'nalishlar",
+    "groups": "Guruhlar",
+    "subjects": "Fanlar",
+    "offerings": "Fan yuklamalari",
+    "workload": "Yuklama",
+    "streams": "Potoklar",
+    "formulas": "Formulalar",
+    "monitoring": "Monitoring",
+    "statistics": "Statistika",
+    "reports": "Hisobotlar",
+    "logout": "Chiqish"
+  },
+  "auth": {
+    "login": "Tizimga kirish",
+    "email": "Email",
+    "password": "Parol",
+    "submit": "Kirish",
+    "invalid_credentials": "Email yoki parol noto'g'ri"
+  },
+  "status": {
+    "assigned": "Biriktirilgan",
+    "unassigned": "Biriktirilmagan",
+    "invalid": "Xato",
+    "draft": "Qoralama",
+    "ready": "Tayyor"
+  },
+  "level": { "bachelor": "Bakalavr", "master": "Magistr" },
+  "studyType": { "full_time": "Kunduzgi", "part_time": "Sirtqi" },
+  "language": { "uzbek": "O'zbek", "russian": "Rus" },
+  "academicTerm": { "fall": "Kuzgi", "spring": "Bahorgi" },
+  "workloadType": {
+    "lecture": "Ma'ruza",
+    "practice": "Amaliy",
+    "lab": "Laboratoriya",
+    "control": "Nazorat",
+    "course_project": "Kurs ishi",
+    "internship": "Amaliyot",
+    "prediploma": "Bitiruv oldi amaliyot",
+    "VQR": "VQR",
+    "MD": "MD",
+    "NDP": "NDP",
+    "NS": "NS"
+  },
+  "calculationMode": {
+    "coefficient_based": "Koeffitsientli",
+    "fixed_per_student": "Har talaba uchun fiksirlangan",
+    "fixed_per_group": "Har guruh uchun fiksirlangan",
+    "fixed_value": "Fiksirlangan qiymat"
+  },
+  "toasts": {
+    "created": "{{name}} qo'shildi",
+    "updated": "{{name}} yangilandi",
+    "deleted": "Element o'chirildi",
+    "assigned": "{{name}}ga biriktirildi",
+    "unassigned": "Biriktirish olib tashlandi",
+    "generated": "{{created}} ta yangi element yaratildi · {{skipped}} ta o'tkazib yuborildi",
+    "stream_created": "Potok yaratildi",
+    "stream_updated": "Potok yangilandi"
+  },
+  "common": {
+    "loading": "Yuklanmoqda...",
+    "empty": "Ma'lumot yo'q",
+    "search": "Qidirish",
+    "filter": "Filtr",
+    "export_excel": "Excel'ga eksport",
+    "cancel": "Bekor qilish",
+    "close": "Yopish",
+    "save": "Saqlash",
+    "create": "Yaratish",
+    "edit": "Tahrirlash",
+    "delete": "O'chirish",
+    "actions": "Amallar",
+    "page_of": "{{total}} dan {{page}}-sahifa"
+  },
+  "teachers": {
+    "add": "O'qituvchi qo'shish",
+    "add_title": "O'qituvchi qo'shish",
+    "edit_title": "O'qituvchini tahrirlash",
+    "degree_badge": "Darajali",
+    "total_suffix": "jami",
+    "status_active": "Faol",
+    "status_inactive": "Faol emas",
+    "confirm_delete": "{{name}} o'chirilsinmi? Yuklamasi bo'lsa, faqat faoliyatdan chiqariladi.",
+    "fields": {
+      "fullName": "To'liq ismi",
+      "position": "Lavozim",
+      "degreeName": "Ilmiy darajasi",
+      "degreeName_hint": "Masalan: PhD, dotsent",
+      "annualNorm": "Yillik norma (soat)",
+      "hasScientificDegree": "Ilmiy darajasi bor",
+      "isActive": "Faol",
+      "status": "Holati"
+    }
+  },
+  "directions": {
+    "add": "Yo'nalish qo'shish",
+    "add_title": "Yo'nalish qo'shish",
+    "edit_title": "Yo'nalishni tahrirlash",
+    "total_suffix": "yo'nalish",
+    "all_levels": "Hamma darajalar",
+    "confirm_delete": "{{name}} yo'nalishini o'chirishmi? Guruhlar yoki fanlar bog'langan bo'lsa, amal bajarilmaydi.",
+    "fields": {
+      "name": "Nomi",
+      "code": "Kodi",
+      "code_hint": "Qisqa noyob kod, masalan 5A330200",
+      "level": "Daraja",
+      "groups": "Guruhlar",
+      "subjects": "Fanlar"
+    }
+  },
+  "groups": {
+    "add": "Guruh qo'shish",
+    "add_title": "Guruh qo'shish",
+    "edit_title": "Guruhni tahrirlash",
+    "total_suffix": "guruh",
+    "all_directions": "Hamma yo'nalishlar",
+    "all_languages": "Hamma tillar",
+    "pick_direction": "Yo'nalishni tanlang…",
+    "confirm_delete": "{{name}} guruhini o'chirishmi? Agar fan, potok yoki yuklamaga bog'langan bo'lsa, amal bajarilmaydi.",
+    "fields": {
+      "name": "Guruh nomi",
+      "direction": "Yo'nalish",
+      "level_studyType": "Daraja / Ta'lim turi",
+      "courseYear": "Kurs",
+      "semester": "Semestr",
+      "semesterNumber": "Semestr raqami",
+      "academicTerm": "Mavsum",
+      "language": "Til",
+      "studentCount": "Talabalar",
+      "studyType": "Ta'lim turi"
+    }
+  },
+  "subjects": {
+    "add": "Fan qo'shish",
+    "add_title": "Fan qo'shish",
+    "edit_title": "Fanni tahrirlash",
+    "total_suffix": "fan",
+    "confirm_delete": "{{name}} fanini o'chirishmi? Unga bog'liq yuklamalar bo'lsa, amal bajarilmaydi.",
+    "fields": {
+      "name": "Fan nomi",
+      "code": "Kod",
+      "code_hint": "Ixtiyoriy qisqa kod, masalan CS101",
+      "direction": "Yo'nalish",
+      "level": "Daraja",
+      "offerings": "Yuklamalar",
+      "isActive": "Faol"
+    }
+  },
+  "offerings": {
+    "add": "Yuklama qo'shish",
+    "add_title": "Fan yuklamasini qo'shish",
+    "edit_title": "Fan yuklamasini tahrirlash",
+    "total_suffix": "yuklama",
+    "all_terms": "Hamma mavsumlar",
+    "pick_subject": "Fanni tanlang…",
+    "pick_subject_first": "Avval fanni tanlang, keyin mos guruhlar ko'rinadi.",
+    "no_matching_groups": "Ushbu fanning yo'nalish/darajasiga mos guruh yo'q.",
+    "no_groups": "Bog'langan guruh yo'q",
+    "selected_count": "{{count}} ta tanlandi",
+    "students_short": "talaba",
+    "confirm_delete": "{{name}} ({{term}}) yuklamasini o'chirishmi? Potok yoki yuklama bo'lsa, amal bajarilmaydi.",
+    "fields": {
+      "subject": "Fan",
+      "direction": "Yo'nalish",
+      "placement": "Joylashuv",
+      "groups": "Bog'langan guruhlar",
+      "studentsTotal": "Talabalar",
+      "studyType": "Ta'lim turi",
+      "courseYear": "Kurs",
+      "semesterNumber": "Semestr raqami",
+      "academicTerm": "Mavsum",
+      "isActive": "Faol"
+    }
+  },
+  "streams": {
+    "add": "Potok qo'shish",
+    "add_title": "Ma'ruza potokini qo'shish",
+    "edit_title": "Ma'ruza potokini tahrirlash",
+    "total_suffix": "potok",
+    "all_statuses": "Hamma holatlar",
+    "pick_offering": "Fan yuklamasini tanlang…",
+    "pick_offering_first": "Avval fan yuklamasini tanlang, keyin guruhlar ko'rinadi.",
+    "pick_first_hint": "Birinchi guruhni tanlang — potok tili shunga qarab qulflanadi.",
+    "locked_language": "Til {{lang}}ga qulflandi",
+    "different_language": "Boshqa til",
+    "no_groups": "Ushbu yuklamaga bog'langan guruh yo'q.",
+    "no_teacher": "— biriktirilmagan —",
+    "total_students": "{{count}} talaba",
+    "group_count": "{{count}} guruh",
+    "confirm_delete": "{{name}} potokini o'chirishmi? Yuklamaga bog'langan bo'lsa, amal bajarilmaydi.",
+    "fields": {
+      "offering": "Fan yuklamasi",
+      "subject": "Fan",
+      "placement": "Joylashuv",
+      "language": "Til",
+      "groups": "Guruhlar",
+      "students": "Talabalar",
+      "teacher": "O'qituvchi",
+      "status": "Holati"
+    }
+  },
+  "category": {
+    "auditorium": "Auditoriya",
+    "non_auditorium": "Auditoriyadan tashqari"
+  },
+  "dashboard": {
+    "title": "Bosh sahifa",
+    "kpi": {
+      "items": "Elementlar",
+      "totalHours": "Jami soat",
+      "assigned": "Biriktirilgan",
+      "unassigned": "Biriktirilmagan"
+    },
+    "category": { "title": "Kategoriya bo'yicha soatlar" },
+    "byType": { "title": "Yuklama turi bo'yicha soatlar" },
+    "teacherLoad": {
+      "title": "O'qituvchi yuklamasi vs yillik norma",
+      "assigned": "Biriktirilgan soat",
+      "norm": "Yillik norma",
+      "over": "Normadan ortiq",
+      "norm_line": "top norma"
+    },
+    "overNorm": {
+      "title": "Normadan oshgan o'qituvchilar ({{count}})"
+    }
+  },
+  "my_workload": {
+    "title": "Mening yuklamam",
+    "annual": "Yillik jami",
+    "fall": "Kuzgi semestr",
+    "spring": "Bahorgi semestr",
+    "category_split": "Aud. / Aud.dan tashqari",
+    "category_hint": "Soatlar kategoriya bo'yicha",
+    "norm_hint": "{{norm}}h normadan ({{pct}}%)",
+    "items_title": "Biriktirilgan elementlar",
+    "items": "ta element",
+    "empty": "Sizga hali yuklama biriktirilmagan."
+  },
+  "workload": {
+    "total_suffix": "element",
+    "all_years": "Barcha yillar",
+    "all_types": "Barcha turlar",
+    "no_teacher": "— biriktirilmagan —",
+    "assign_action": "Biriktirish",
+    "reassign": "Qayta biriktirish",
+    "unassign": "Biriktirishni olib tashlash",
+    "planned": "rejalashtirilgan",
+    "requires_degree": "Ilmiy daraja talab qilinadi",
+    "stream_of": "Potok:",
+    "group": "Guruh",
+    "confirm_delete": "Ushbu yuklama elementini o'chirishmi? Biriktirish tarixi o'chadi.",
+    "kpi": {
+      "total": "Elementlar",
+      "auditorium": "Auditoriya soatlari",
+      "non_auditorium": "Auditoriyadan tashqari soatlar",
+      "unassigned": "Biriktirilmagan"
+    },
+    "fields": {
+      "subject": "Fan",
+      "type": "Turi",
+      "scope": "Qamrov",
+      "students": "Talabalar",
+      "hours": "Soat",
+      "teacher": "O'qituvchi",
+      "status": "Holat"
+    },
+    "export": {
+      "needs_year": "Eksportdan oldin o'quv yilini tanlang."
+    },
+    "generate": {
+      "button": "Yuklamalarni yaratish",
+      "title": "Yuklama elementlarini yaratish",
+      "year": "O'quv yili",
+      "pick_year": "Yilni tanlang…",
+      "offerings": "Fan yuklamalari",
+      "hint": "Bo'sh qoldirsangiz, hamma faol yuklamalar uchun yaratiladi. Mavjud elementlar tegilmaydi.",
+      "select_all": "Hammasini tanlash",
+      "clear": "Tozalash",
+      "run": "Yaratish",
+      "result": "{{created}} ta yangi element yaratildi · {{skipped}} ta mavjud o'tkazib yuborildi."
+    },
+    "assign": {
+      "title": "O'qituvchi biriktirish",
+      "teacher": "O'qituvchi",
+      "pick_teacher": "O'qituvchini tanlang…",
+      "submit": "Saqlash",
+      "ok": "Yillik norma: {{norm}} soat — mos keladi.",
+      "degree_mismatch": "⚠ {{type}} uchun ilmiy darajali o'qituvchi kerak (Rule 13). Server bu biriktirishni rad qiladi.",
+      "degree_mismatch_short": "Daraja mos emas (Rule 13)",
+      "invalid": "Xato"
+    }
+  },
+  "formulas": {
+    "add": "Formula qo'shish",
+    "add_title": "Formula qo'shish",
+    "edit_title": "Formulani tahrirlash",
+    "total_suffix": "formula",
+    "all_scopes": "Hamma turlar",
+    "confirm_delete": "{{name}} formulasini o'chirishmi? Yuklama ishlatayotgan bo'lsa, faol emas qilinadi.",
+    "fields": {
+      "name": "Nomi",
+      "scopeType": "Qo'llanish turi",
+      "level": "Daraja",
+      "studyType": "Ta'lim turi",
+      "calculationMode": "Hisoblash usuli",
+      "baseHours": "Asosiy soatlar",
+      "baseHours_hint": "Har guruhga qo'shiladigan asosiy soat",
+      "coefficientPerStudent": "Har talabaga soat",
+      "fixedHoursPerStudent": "Har talabaga soat",
+      "fixedHoursPerStudent_hint": "Jami = soat × talabalar soni",
+      "fixedHoursPerGroup": "Har guruhga soat",
+      "fixedValue": "Fiksirlangan soat",
+      "fixedValue_hint": "Talaba/guruh sonidan qat'iy nazar qo'llaniladi",
+      "effectiveFrom": "Amal qilish sanasi",
+      "context": "Kontekst",
+      "parameters": "Parametrlar",
+      "status": "Holati",
+      "isActive": "Faol"
+    }
+  }
+}

@@ -1,0 +1,441 @@
+// AWDMS Prisma schema — PostgreSQL
+// Translated from Section 7 of AWDMS_Technical_Specification.md
+// Enforces business rules from Section 2.2 at the DB level wherever possible.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // transaction pooler for runtime
+  directUrl = env("DIRECT_URL") // direct connection for migrations
+}
+
+// ─────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────
+
+enum UserRole {
+  admin
+  teacher
+  student
+  guest
+}
+
+enum StudyLevel {
+  bachelor
+  master
+}
+
+enum StudyType {
+  full_time
+  part_time
+}
+
+enum AcademicTerm {
+  fall
+  spring
+}
+
+enum Language {
+  uzbek
+  russian
+}
+
+// Covers all workload types from Section 2.1 and 4.7
+enum WorkloadType {
+  lecture
+  practice
+  lab
+  control
+  course_project
+  internship
+  prediploma
+  VQR
+  MD
+  NDP
+  NS
+}
+
+enum WorkloadCategory {
+  auditorium
+  non_auditorium
+}
+
+enum AssignmentStatus {
+  unassigned
+  assigned
+  invalid
+}
+
+enum StreamStatus {
+  draft
+  ready
+  assigned
+}
+
+enum CalculationMode {
+  coefficient_based
+  fixed_per_student
+  fixed_per_group
+  fixed_value
+}
+
+// Formula scope — which workload type a formula applies to (Section 7.7)
+enum FormulaScope {
+  lecture
+  control
+  practice
+  lab
+  course_project
+  VQR
+  MD
+  NDP
+  NS
+}
+
+enum AssignmentAction {
+  assign
+  reassign
+  unassign
+}
+
+enum AuditAction {
+  create
+  update
+  delete
+}
+
+enum AuditEntityType {
+  teacher
+  formula
+  stream
+  workload
+  assignment
+  user
+  group
+  direction
+  subject_offering
+  academic_year
+}
+
+// ─────────────────────────────────────────────────────────────
+// Core models
+// ─────────────────────────────────────────────────────────────
+
+// Section 7.1 — users
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  fullName     String
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+  // One user <-> one teacher profile (optional)
+  teacherId    String?  @unique @db.Uuid
+  teacher      Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  isActive     Boolean  @default(true)
+  // §10.1 logout invalidation: incremented on logout/password-change.
+  // The access/refresh JWT carries this value; tokens with a stale tv are rejected.
+  tokenVersion Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assignmentLogs AssignmentLog[]
+  auditLogs      AuditLog[]
+
+  @@index([role])
+  @@map("users")
+}
+
+// Section 7.2 — teachers
+// Rule 13: MD/NDP/NS can only be assigned to teachers with hasScientificDegree = true.
+// Rule 15: annualNorm editable in teacher profile.
+model Teacher {
+  id                  String   @id @default(uuid()) @db.Uuid
+  fullName            String
+  degreeName          String
+  hasScientificDegree Boolean  @default(false)
+  position            String
+  annualNorm          Int // hours
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user           User?
+  lectureStreams LectureStream[]
+  assignedItems  WorkloadItem[]  @relation("AssignedTeacher")
+  oldAssignments AssignmentLog[] @relation("OldTeacher")
+  newAssignments AssignmentLog[] @relation("NewTeacher")
+
+  @@index([isActive])
+  @@index([hasScientificDegree])
+  @@map("teachers")
+}
+
+// Section 7.3 — academic_years
+model AcademicYear {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique // e.g. '2026-2027'
+  isActive  Boolean  @default(false)
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workloadItems WorkloadItem[]
+
+  @@map("academic_years")
+}
+
+// Section 7.4 — directions
+model Direction {
+  id    String     @id @default(uuid()) @db.Uuid
+  name  String
+  code  String     @unique
+  level StudyLevel
+
+  groups   Group[]
+  subjects Subject[]
+
+  @@map("directions")
+}
+
+// Subject catalog — a subject belongs to a direction. Each subject can have
+// one or more SubjectOffering instances (per term/studyType/course year).
+// Not explicitly named in §7 but introduced so the Subject catalog is CRUD-able
+// separately from per-term offerings (§4.4).
+model Subject {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String
+  code        String?
+  directionId String     @db.Uuid
+  direction   Direction  @relation(fields: [directionId], references: [id], onDelete: Restrict)
+  level       StudyLevel
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  offerings SubjectOffering[]
+
+  @@unique([directionId, name])
+  @@index([directionId])
+  @@map("subjects")
+}
+
+// Section 7.5 — groups
+model Group {
+  id             String       @id @default(uuid()) @db.Uuid
+  name           String       @unique
+  directionId    String       @db.Uuid
+  direction      Direction    @relation(fields: [directionId], references: [id], onDelete: Restrict)
+  level          StudyLevel
+  studyType      StudyType
+  courseYear     Int
+  semesterNumber Int
+  academicTerm   AcademicTerm
+  language       Language
+  studentCount   Int
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  subjectOfferingLinks SubjectOfferingGroup[]
+  streamLinks          StreamGroup[]
+  workloadItems        WorkloadItem[]
+
+  @@index([directionId])
+  @@index([academicTerm, courseYear])
+  @@map("groups")
+}
+
+// Section 7.6 — subject_offerings. Each offering = one (subject, term, course, studyType)
+// combination, with a set of linked groups. Direction and level are derivable
+// via subject.direction / subject.level — not denormalized here.
+model SubjectOffering {
+  id             String       @id @default(uuid()) @db.Uuid
+  subjectId      String       @db.Uuid
+  subject        Subject      @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  studyType      StudyType
+  courseYear     Int
+  semesterNumber Int
+  academicTerm   AcademicTerm
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  groupLinks       SubjectOfferingGroup[]
+  lectureStreams   LectureStream[]
+  workloadItems    WorkloadItem[]
+  streamGroupLinks StreamGroup[]          @relation("StreamGroupSubjectOffering")
+
+  // An offering is unique by (subject, term, course, study-type, semester).
+  @@unique([subjectId, studyType, academicTerm, courseYear, semesterNumber])
+  @@index([subjectId])
+  @@index([academicTerm, courseYear, semesterNumber])
+  @@map("subject_offerings")
+}
+
+// Join table — subject offerings ↔ groups
+model SubjectOfferingGroup {
+  subjectOfferingId String          @db.Uuid
+  groupId           String          @db.Uuid
+  subjectOffering   SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Cascade)
+  group             Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([subjectOfferingId, groupId])
+  @@index([groupId])
+  @@map("subject_offering_groups")
+}
+
+// Section 7.7 — formula_configs
+// Rule 14: only admin can edit formulas (enforced at API/guard level).
+model FormulaConfig {
+  id                    String          @id @default(uuid()) @db.Uuid
+  name                  String
+  scopeType             FormulaScope
+  level                 StudyLevel
+  studyType             StudyType
+  calculationMode       CalculationMode
+  baseHours             Float           @default(0)
+  coefficientPerStudent Float           @default(0)
+  fixedHoursPerStudent  Float           @default(0)
+  fixedHoursPerGroup    Float           @default(0)
+  fixedValue            Float           @default(0)
+  isActive              Boolean         @default(true)
+  effectiveFrom         DateTime        @db.Date
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  workloadItems WorkloadItem[]
+
+  // One active formula per (scope, level, studyType, effective date)
+  @@unique([scopeType, level, studyType, effectiveFrom])
+  @@index([scopeType, level, studyType, isActive])
+  @@map("formula_configs")
+}
+
+// Section 7.8 — lecture_streams
+// Rule 6: multiple groups may merge into one stream.
+// Rule 8: Uzbek and Russian groups cannot be merged (language is per-stream).
+// Rule 9: a subject may have multiple streams.
+model LectureStream {
+  id                String          @id @default(uuid()) @db.Uuid
+  subjectOfferingId String          @db.Uuid
+  subjectOffering   SubjectOffering @relation(fields: [subjectOfferingId], references: [id], onDelete: Cascade)
+  language          Language
+  totalStudentCount Int             @default(0)
+  lectureHours      Float           @default(0)
+  controlHours      Float           @default(0)
+  teacherId         String?         @db.Uuid
+  teacher           Teacher?        @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  status            StreamStatus    @default(draft)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  groupLinks    StreamGroup[]
+  workloadItems WorkloadItem[]
+
+  @@index([subjectOfferingId])
+  @@index([teacherId])
+  @@index([status])
+  @@map("lecture_streams")
+}
+
+// Join table — streams ↔ groups
+// Rule 6 + §4.6: a group may only belong to ONE stream per subject offering.
+// Enforced at the DB via the composite unique (groupId, subjectOfferingId).
+// subjectOfferingId is denormalized from LectureStream — the service layer MUST
+// set StreamGroup.subjectOfferingId equal to the parent stream's subjectOfferingId
+// on every create/update. There is no trigger; this is a service-layer invariant.
+model StreamGroup {
+  streamId          String          @db.Uuid
+  groupId           String          @db.Uuid
+  subjectOfferingId String          @db.Uuid
+  stream            LectureStream   @relation(fields: [streamId], references: [id], onDelete: Cascade)
+  group             Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  subjectOffering   SubjectOffering @relation("StreamGroupSubjectOffering", fields: [subjectOfferingId], references: [id], onDelete: Cascade)
+
+  @@id([streamId, groupId])
+  @@unique([groupId, subjectOfferingId])
+  @@index([groupId])
+  @@index([subjectOfferingId])
+  @@map("stream_groups")
+}
+
+// Section 7.9 — workload_items
+// Rule 1–5: single-owner policy; lectures/practicals assigned to exactly one teacher (enforced via assignedTeacherId).
+// Rule 10: practical must be linked to its lecture stream (lectureStreamId).
+// Rule 11: course_project is auditorium.
+// Rule 12: VQR/MD/NDP/NS tracked by studentCount, not student name.
+// Rule 13: requiresDegree flags items that need a teacher with scientific degree.
+model WorkloadItem {
+  id                String           @id @default(uuid()) @db.Uuid
+  academicYearId    String           @db.Uuid
+  academicYear      AcademicYear     @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+  subjectOfferingId String?          @db.Uuid
+  subjectOffering   SubjectOffering? @relation(fields: [subjectOfferingId], references: [id], onDelete: SetNull)
+  lectureStreamId   String?          @db.Uuid
+  lectureStream     LectureStream?   @relation(fields: [lectureStreamId], references: [id], onDelete: SetNull)
+  groupId           String?          @db.Uuid
+  group             Group?           @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  workloadType      WorkloadType
+  category          WorkloadCategory
+  studentCount      Int              @default(0)
+  plannedHours      Float            @default(0)
+  formulaConfigId   String?          @db.Uuid
+  formulaConfig     FormulaConfig?   @relation(fields: [formulaConfigId], references: [id], onDelete: SetNull)
+  requiresDegree    Boolean          @default(false)
+  assignedTeacherId String?          @db.Uuid
+  assignedTeacher   Teacher?         @relation("AssignedTeacher", fields: [assignedTeacherId], references: [id], onDelete: SetNull)
+  status            AssignmentStatus @default(unassigned)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  assignmentLogs AssignmentLog[]
+
+  @@index([academicYearId])
+  @@index([assignedTeacherId])
+  @@index([status])
+  @@index([workloadType, category])
+  @@index([lectureStreamId])
+  @@index([subjectOfferingId])
+  @@map("workload_items")
+}
+
+// Section 7.10 — assignment_logs
+model AssignmentLog {
+  id                String           @id @default(uuid()) @db.Uuid
+  workloadItemId    String           @db.Uuid
+  workloadItem      WorkloadItem     @relation(fields: [workloadItemId], references: [id], onDelete: Cascade)
+  oldTeacherId      String?          @db.Uuid
+  oldTeacher        Teacher?         @relation("OldTeacher", fields: [oldTeacherId], references: [id], onDelete: SetNull)
+  newTeacherId      String?          @db.Uuid
+  newTeacher        Teacher?         @relation("NewTeacher", fields: [newTeacherId], references: [id], onDelete: SetNull)
+  action            AssignmentAction
+  performedByUserId String           @db.Uuid
+  performedBy       User             @relation(fields: [performedByUserId], references: [id], onDelete: Restrict)
+  createdAt         DateTime         @default(now())
+
+  @@index([workloadItemId])
+  @@index([performedByUserId])
+  @@index([createdAt])
+  @@map("assignment_logs")
+}
+
+// Section 7.11 — audit_logs
+model AuditLog {
+  id                String          @id @default(uuid()) @db.Uuid
+  entityType        AuditEntityType
+  entityId          String          @db.Uuid
+  action            AuditAction
+  oldValue          Json?
+  newValue          Json?
+  performedByUserId String          @db.Uuid
+  performedBy       User            @relation(fields: [performedByUserId], references: [id], onDelete: Restrict)
+  createdAt         DateTime        @default(now())
+
+  @@index([entityType, entityId])
+  @@index([performedByUserId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

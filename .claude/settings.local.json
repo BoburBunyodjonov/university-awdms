@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Bash(ls:*)",
+      "Bash(npm install:*)",
+      "Bash(npx prisma:*)",
+      "Bash(nslookup db.jhzoinmyrypdztkbxrfg.supabase.co)",
+      "Bash(getent hosts:*)",
+      "Bash(timeout 10 bash -c 'cat < /dev/tcp/db.jhzoinmyrypdztkbxrfg.supabase.co/5432')",
+      "Bash(echo \"exit=$?\")",
+      "Bash(npm --workspace packages/shared run typecheck)",
+      "Bash(npm --workspace apps/backend run typecheck)",
+      "Bash(npm --workspace @awdms/backend run typecheck)",
+      "Bash(npm --workspace @awdms/shared run build)",
+      "Bash(npm --workspace @awdms/frontend run typecheck)",
+      "Bash(timeout 10 bash -c 'cat < /dev/tcp/aws-0-eu-west-1.pooler.supabase.com/6543')",
+      "Bash(timeout 10 bash -c 'cat < /dev/tcp/aws-0-eu-west-1.pooler.supabase.com/5432')",
+      "Bash(node:*)",
+      "Bash(curl -s -o /dev/null -w 'HTTP %{http_code}\\\\n' -X POST http://localhost:4000/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@awdms.uz\",\"password\":\"definitelyWrong123\"}')",
+      "Bash(curl -s -X POST http://localhost:4000/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@awdms.uz\",\"password\":\"AdminPassword2026!\"}')",
+      "Bash(kill 2411127)",
+      "Bash(pkill -f \"node dist/main.js\")",
+      "Bash(npm --workspace @awdms/backend run build)",
+      "Bash(script -qc 'npx prisma migrate dev --create-only --name add_subjects' /dev/null)",
+      "Bash(pkill -f \"prisma migrate\")",
+      "Bash(yes)",
+      "Bash(pkill -f \"prisma\")",
+      "Bash(pkill -f \"script\")",
+      "Bash(npm --workspace @awdms/frontend run build)",
+      "Bash(npm --workspace apps/backend run build)"
+    ]
+  }
+}

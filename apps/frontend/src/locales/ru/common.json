@@ -1,0 +1,326 @@
+{
+  "app_name": "AWDMS — Учебная нагрузка",
+  "nav": {
+    "dashboard": "Главная",
+    "teachers": "Преподаватели",
+    "directions": "Направления",
+    "groups": "Группы",
+    "subjects": "Дисциплины",
+    "offerings": "Учебные нагрузки",
+    "workload": "Нагрузка",
+    "streams": "Потоки",
+    "formulas": "Формулы",
+    "monitoring": "Мониторинг",
+    "statistics": "Статистика",
+    "reports": "Отчёты",
+    "logout": "Выход"
+  },
+  "auth": {
+    "login": "Войти в систему",
+    "email": "Email",
+    "password": "Пароль",
+    "submit": "Войти",
+    "invalid_credentials": "Неверный email или пароль"
+  },
+  "status": {
+    "assigned": "Назначено",
+    "unassigned": "Не назначено",
+    "invalid": "Ошибка",
+    "draft": "Черновик",
+    "ready": "Готово"
+  },
+  "level": { "bachelor": "Бакалавриат", "master": "Магистратура" },
+  "studyType": { "full_time": "Очная", "part_time": "Заочная" },
+  "language": { "uzbek": "Узбекский", "russian": "Русский" },
+  "academicTerm": { "fall": "Осенний", "spring": "Весенний" },
+  "workloadType": {
+    "lecture": "Лекция",
+    "practice": "Практика",
+    "lab": "Лабораторная",
+    "control": "Контроль",
+    "course_project": "Курсовая",
+    "internship": "Практика (произв.)",
+    "prediploma": "Преддипломная",
+    "VQR": "ВКР",
+    "MD": "МД",
+    "NDP": "НДП",
+    "NS": "НС"
+  },
+  "calculationMode": {
+    "coefficient_based": "Коэффициентный",
+    "fixed_per_student": "Фиксир. на студента",
+    "fixed_per_group": "Фиксир. на группу",
+    "fixed_value": "Фиксир. значение"
+  },
+  "toasts": {
+    "created": "Создано: {{name}}",
+    "updated": "Изменения сохранены: {{name}}",
+    "deleted": "Элемент удалён",
+    "assigned": "Назначено: {{name}}",
+    "unassigned": "Назначение снято",
+    "generated": "Создано {{created}} новых элементов · пропущено {{skipped}}",
+    "stream_created": "Поток создан",
+    "stream_updated": "Поток обновлён"
+  },
+  "common": {
+    "loading": "Загрузка...",
+    "empty": "Нет данных",
+    "search": "Поиск",
+    "filter": "Фильтр",
+    "export_excel": "Экспорт в Excel",
+    "cancel": "Отмена",
+    "close": "Закрыть",
+    "save": "Сохранить",
+    "create": "Создать",
+    "edit": "Изменить",
+    "delete": "Удалить",
+    "actions": "Действия",
+    "page_of": "Страница {{page}} из {{total}}"
+  },
+  "teachers": {
+    "add": "Добавить преподавателя",
+    "add_title": "Добавить преподавателя",
+    "edit_title": "Редактировать преподавателя",
+    "degree_badge": "Степень",
+    "total_suffix": "всего",
+    "status_active": "Активен",
+    "status_inactive": "Неактивен",
+    "confirm_delete": "Удалить {{name}}? Если есть нагрузка — будет деактивирован.",
+    "fields": {
+      "fullName": "ФИО",
+      "position": "Должность",
+      "degreeName": "Учёная степень",
+      "degreeName_hint": "Напр.: PhD, доцент",
+      "annualNorm": "Годовая норма (часов)",
+      "hasScientificDegree": "Имеет учёную степень",
+      "isActive": "Активен",
+      "status": "Статус"
+    }
+  },
+  "directions": {
+    "add": "Добавить направление",
+    "add_title": "Добавить направление",
+    "edit_title": "Редактировать направление",
+    "total_suffix": "направлений",
+    "all_levels": "Все уровни",
+    "confirm_delete": "Удалить направление {{name}}? Не удастся, если связаны группы или предметы.",
+    "fields": {
+      "name": "Название",
+      "code": "Код",
+      "code_hint": "Уникальный короткий код, напр. 5A330200",
+      "level": "Уровень",
+      "groups": "Групп",
+      "subjects": "Дисциплин"
+    }
+  },
+  "groups": {
+    "add": "Добавить группу",
+    "add_title": "Добавить группу",
+    "edit_title": "Редактировать группу",
+    "total_suffix": "групп",
+    "all_directions": "Все направления",
+    "all_languages": "Все языки",
+    "pick_direction": "Выберите направление…",
+    "confirm_delete": "Удалить группу {{name}}? Нельзя, если она привязана к предмету, потоку или нагрузке.",
+    "fields": {
+      "name": "Название группы",
+      "direction": "Направление",
+      "level_studyType": "Уровень / Форма",
+      "courseYear": "Курс",
+      "semester": "Семестр",
+      "semesterNumber": "Номер семестра",
+      "academicTerm": "Семестр",
+      "language": "Язык",
+      "studentCount": "Студентов",
+      "studyType": "Форма обучения"
+    }
+  },
+  "subjects": {
+    "add": "Добавить дисциплину",
+    "add_title": "Добавить дисциплину",
+    "edit_title": "Редактировать дисциплину",
+    "total_suffix": "дисциплин",
+    "confirm_delete": "Удалить дисциплину {{name}}? Нельзя, если есть связанные нагрузки.",
+    "fields": {
+      "name": "Название",
+      "code": "Код",
+      "code_hint": "Необязательный короткий код, напр. CS101",
+      "direction": "Направление",
+      "level": "Уровень",
+      "offerings": "Нагрузок",
+      "isActive": "Активна"
+    }
+  },
+  "offerings": {
+    "add": "Добавить нагрузку",
+    "add_title": "Добавить учебную нагрузку",
+    "edit_title": "Редактировать учебную нагрузку",
+    "total_suffix": "нагрузок",
+    "all_terms": "Все семестры",
+    "pick_subject": "Выберите дисциплину…",
+    "pick_subject_first": "Сначала выберите дисциплину, затем появятся подходящие группы.",
+    "no_matching_groups": "Нет групп, соответствующих направлению/уровню дисциплины.",
+    "no_groups": "Группы не привязаны",
+    "selected_count": "Выбрано: {{count}}",
+    "students_short": "студ.",
+    "confirm_delete": "Удалить нагрузку {{name}} ({{term}})? Нельзя, если есть потоки или нагрузка.",
+    "fields": {
+      "subject": "Дисциплина",
+      "direction": "Направление",
+      "placement": "Размещение",
+      "groups": "Привязанные группы",
+      "studentsTotal": "Студентов",
+      "studyType": "Форма",
+      "courseYear": "Курс",
+      "semesterNumber": "Номер семестра",
+      "academicTerm": "Семестр",
+      "isActive": "Активна"
+    }
+  },
+  "streams": {
+    "add": "Добавить поток",
+    "add_title": "Добавить поток лекций",
+    "edit_title": "Редактировать поток лекций",
+    "total_suffix": "потоков",
+    "all_statuses": "Все статусы",
+    "pick_offering": "Выберите учебную нагрузку…",
+    "pick_offering_first": "Сначала выберите нагрузку — затем появятся группы.",
+    "pick_first_hint": "Выберите первую группу — это зафиксирует язык потока.",
+    "locked_language": "Язык зафиксирован: {{lang}}",
+    "different_language": "Другой язык",
+    "no_groups": "У этой нагрузки нет привязанных групп.",
+    "no_teacher": "— не назначен —",
+    "total_students": "{{count}} студентов",
+    "group_count": "{{count}} групп",
+    "confirm_delete": "Удалить поток {{name}}? Нельзя, если есть связанная нагрузка.",
+    "fields": {
+      "offering": "Учебная нагрузка",
+      "subject": "Дисциплина",
+      "placement": "Размещение",
+      "language": "Язык",
+      "groups": "Группы",
+      "students": "Студентов",
+      "teacher": "Преподаватель",
+      "status": "Статус"
+    }
+  },
+  "category": {
+    "auditorium": "Аудиторная",
+    "non_auditorium": "Внеаудиторная"
+  },
+  "dashboard": {
+    "title": "Главная",
+    "kpi": {
+      "items": "Элементов",
+      "totalHours": "Всего часов",
+      "assigned": "Назначено",
+      "unassigned": "Не назначено"
+    },
+    "category": { "title": "Часы по категории" },
+    "byType": { "title": "Часы по типу нагрузки" },
+    "teacherLoad": {
+      "title": "Нагрузка преподавателя vs годовая норма",
+      "assigned": "Назначенные часы",
+      "norm": "Годовая норма",
+      "over": "Свыше нормы",
+      "norm_line": "норма"
+    },
+    "overNorm": {
+      "title": "Превышение нормы ({{count}})"
+    }
+  },
+  "my_workload": {
+    "title": "Моя нагрузка",
+    "annual": "Годовой итог",
+    "fall": "Осенний семестр",
+    "spring": "Весенний семестр",
+    "category_split": "Ауд. / Внеауд.",
+    "category_hint": "Часы по категориям",
+    "norm_hint": "из нормы {{norm}} ч ({{pct}}%)",
+    "items_title": "Назначенные элементы",
+    "items": "эл.",
+    "empty": "Вам пока не назначена нагрузка."
+  },
+  "workload": {
+    "total_suffix": "элементов",
+    "all_years": "Все годы",
+    "all_types": "Все типы",
+    "no_teacher": "— не назначен —",
+    "assign_action": "Назначить",
+    "reassign": "Переназначить",
+    "unassign": "Снять назначение",
+    "planned": "планируется",
+    "requires_degree": "Требуется учёная степень",
+    "stream_of": "Поток:",
+    "group": "Группа",
+    "confirm_delete": "Удалить элемент нагрузки? История назначений будет потеряна.",
+    "kpi": {
+      "total": "Элементов",
+      "auditorium": "Ауд. часов",
+      "non_auditorium": "Внеауд. часов",
+      "unassigned": "Не назначено"
+    },
+    "fields": {
+      "subject": "Дисциплина",
+      "type": "Тип",
+      "scope": "Область",
+      "students": "Студентов",
+      "hours": "Часов",
+      "teacher": "Преподаватель",
+      "status": "Статус"
+    },
+    "export": {
+      "needs_year": "Выберите учебный год перед экспортом."
+    },
+    "generate": {
+      "button": "Сгенерировать из нагрузок",
+      "title": "Генерация элементов нагрузки",
+      "year": "Учебный год",
+      "pick_year": "Выберите год…",
+      "offerings": "Учебные нагрузки",
+      "hint": "Оставьте пустым, чтобы сгенерировать для всех активных нагрузок. Существующие не затрагиваются.",
+      "select_all": "Выбрать все",
+      "clear": "Очистить",
+      "run": "Сгенерировать",
+      "result": "Создано {{created}} новых элементов · пропущено {{skipped}} существующих."
+    },
+    "assign": {
+      "title": "Назначить преподавателя",
+      "teacher": "Преподаватель",
+      "pick_teacher": "Выберите преподавателя…",
+      "submit": "Сохранить назначение",
+      "ok": "Годовая норма: {{norm}} ч — подходит.",
+      "degree_mismatch": "⚠ Для {{type}} требуется преподаватель с учёной степенью (Rule 13). Сервер отклонит это назначение.",
+      "degree_mismatch_short": "Нет степени (Rule 13)",
+      "invalid": "Ошибка"
+    }
+  },
+  "formulas": {
+    "add": "Добавить формулу",
+    "add_title": "Добавить формулу",
+    "edit_title": "Редактировать формулу",
+    "total_suffix": "формул",
+    "all_scopes": "Все типы",
+    "confirm_delete": "Удалить формулу {{name}}? Если используется в нагрузке — будет деактивирована.",
+    "fields": {
+      "name": "Название",
+      "scopeType": "Тип",
+      "level": "Уровень",
+      "studyType": "Форма",
+      "calculationMode": "Режим расчёта",
+      "baseHours": "Базовые часы",
+      "baseHours_hint": "Фиксированные часы на каждую группу",
+      "coefficientPerStudent": "Часов на студента",
+      "fixedHoursPerStudent": "Часов на студента",
+      "fixedHoursPerStudent_hint": "Итого = часы × студентов",
+      "fixedHoursPerGroup": "Часов на группу",
+      "fixedValue": "Фиксированные часы",
+      "fixedValue_hint": "Применяется независимо от числа студентов/групп",
+      "effectiveFrom": "Действует с",
+      "context": "Контекст",
+      "parameters": "Параметры",
+      "status": "Статус",
+      "isActive": "Активна"
+    }
+  }
+}
