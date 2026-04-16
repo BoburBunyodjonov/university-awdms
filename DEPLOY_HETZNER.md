@@ -50,6 +50,22 @@ docker compose -f docker-compose.prod.yml logs -f backend
 
 Backend runs Prisma migrate + seed automatically on startup.
 
+## 4.1) One-command deploy script
+
+Project includes scripts so you can deploy with one command:
+
+```bash
+chmod +x scripts/deploy-prod.sh scripts/install-docker-ubuntu.sh
+sudo bash scripts/install-docker-ubuntu.sh   # run once if docker not installed
+bash scripts/deploy-prod.sh
+```
+
+Optional custom path:
+
+```bash
+PROJECT_DIR=/opt/university-awdms bash scripts/deploy-prod.sh
+```
+
 ## 5) Domain + TLS (recommended with Caddy)
 
 If domain is ready, easiest path is Caddy as reverse proxy on host.
