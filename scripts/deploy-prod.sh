@@ -4,7 +4,6 @@ set -euo pipefail
 PROJECT_DIR="${PROJECT_DIR:-/opt/university-awdms}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 ENV_FILE="${ENV_FILE:-apps/backend/.env.production}"
-ENV_EXAMPLE="${ENV_EXAMPLE:-apps/backend/.env.production.example}"
 
 echo "==> AWDMS production deploy starting..."
 echo "    PROJECT_DIR: ${PROJECT_DIR}"
@@ -22,13 +21,8 @@ if [[ ! -f "${COMPOSE_FILE}" ]]; then
 fi
 
 if [[ ! -f "${ENV_FILE}" ]]; then
-  if [[ -f "${ENV_EXAMPLE}" ]]; then
-    cp "${ENV_EXAMPLE}" "${ENV_FILE}"
-    echo "WARN: ${ENV_FILE} was missing, copied from ${ENV_EXAMPLE}"
-  else
-    echo "ERROR: ${ENV_FILE} and ${ENV_EXAMPLE} are both missing."
-    exit 1
-  fi
+  echo "ERROR: ${ENV_FILE} is missing. Create it using variables from repo .env.example (Production section)."
+  exit 1
 fi
 
 if ! command -v docker >/dev/null 2>&1; then

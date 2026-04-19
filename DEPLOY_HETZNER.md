@@ -24,11 +24,9 @@ cd awdms
 
 ## 3) Production env
 
-```bash
-cp apps/backend/.env.production.example apps/backend/.env.production
-```
+Create `apps/backend/.env.production` (see root `.env.example` for required variables).
 
-Update `apps/backend/.env.production`:
+Set in `apps/backend/.env.production`:
 - database urls
 - jwt secrets
 - cors origin (`https://your-domain.com`)
