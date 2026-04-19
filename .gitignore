@@ -14,6 +14,7 @@ apps/frontend/dist/
 
 # Backend build
 apps/backend/dist/
+apps/backend/prisma/dist-seed/
 
 # Prisma generated client (regenerated on install)
 apps/backend/node_modules/.prisma/
