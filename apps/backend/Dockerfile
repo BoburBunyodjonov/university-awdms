@@ -23,6 +23,10 @@ COPY apps/backend/package.json apps/backend/package.json
 COPY packages/shared/package.json packages/shared/package.json
 RUN npm ci --omit=dev --workspace apps/backend --workspace packages/shared
 
+# prisma generate runs only in the builder; fresh npm ci leaves a stub client — copy generated output
+COPY --from=builder /app/node_modules/.prisma /app/node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client /app/node_modules/@prisma/client
+
 COPY --from=builder /app/packages/shared/dist packages/shared/dist
 COPY --from=builder /app/apps/backend/dist apps/backend/dist
 COPY --from=builder /app/apps/backend/prisma apps/backend/prisma
