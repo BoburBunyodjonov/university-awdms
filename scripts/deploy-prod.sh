@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_DIR="${PROJECT_DIR:-/opt/university-awdms}"
+PROJECT_DIR="${PROJECT_DIR:-/opt/awdms}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 ENV_FILE="${ENV_FILE:-apps/backend/.env.production}"
 
