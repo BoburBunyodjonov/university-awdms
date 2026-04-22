@@ -48,4 +48,5 @@ echo "==> Last backend logs (120 lines):"
 docker compose -f "${COMPOSE_FILE}" logs --tail=120 backend || true
 
 echo "==> Deploy finished."
-echo "    Health check: curl -I http://localhost/api/docs"
+echo "    API liveness: curl -sS http://localhost/api/health"
+echo "    Swagger:      curl -I http://localhost/api/docs"
