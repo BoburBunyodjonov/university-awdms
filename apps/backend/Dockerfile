@@ -1,9 +1,12 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# npm ci requires a package.json on disk for every workspace listed in the lockfile
 COPY package*.json ./
 COPY turbo.json tsconfig.base.json ./
 COPY apps/backend/package.json apps/backend/package.json
+COPY apps/frontend/package.json apps/frontend/package.json
+COPY apps/workload-mock-ui/package.json apps/workload-mock-ui/package.json
 COPY packages/shared/package.json packages/shared/package.json
 RUN npm ci
 
@@ -20,8 +23,13 @@ ENV NODE_ENV=production
 
 COPY package*.json ./
 COPY apps/backend/package.json apps/backend/package.json
+COPY apps/frontend/package.json apps/frontend/package.json
+COPY apps/workload-mock-ui/package.json apps/workload-mock-ui/package.json
 COPY packages/shared/package.json packages/shared/package.json
-RUN npm ci --omit=dev --workspace apps/backend --workspace packages/shared
+# --omit=dev: prisma CLI is not installed, so skip lifecycle scripts; Prisma client is
+# copied from the builder. Rebuild native addons (e.g. bcrypt) skipped by --ignore-scripts.
+RUN npm ci --omit=dev --ignore-scripts --workspace apps/backend --workspace packages/shared
+RUN npm rebuild bcrypt --workspace apps/backend
 
 # prisma generate runs only in the builder; fresh npm ci leaves a stub client — copy generated output
 COPY --from=builder /app/node_modules/.prisma /app/node_modules/.prisma

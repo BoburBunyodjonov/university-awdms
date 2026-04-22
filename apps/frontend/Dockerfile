@@ -6,7 +6,10 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 COPY package*.json ./
 COPY turbo.json tsconfig.base.json ./
+# Lockfile includes all workspaces — each needs its package.json for npm ci
+COPY apps/backend/package.json apps/backend/package.json
 COPY apps/frontend/package.json apps/frontend/package.json
+COPY apps/workload-mock-ui/package.json apps/workload-mock-ui/package.json
 COPY packages/shared/package.json packages/shared/package.json
 RUN npm ci
 
