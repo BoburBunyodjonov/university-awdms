@@ -9,7 +9,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 import type { Teacher } from '@awdms/shared';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DataTable, Td, Th } from '@/components/ui/table';
 import {
@@ -18,6 +18,7 @@ import {
   type TeachersQuery,
 } from '@/features/teachers/api';
 import { TeacherFormModal } from '@/features/teachers/TeacherFormModal';
+import { AssignWorkloadToTeacherModal } from '@/features/workload/AssignWorkloadToTeacherModal';
 import { cn } from '@/lib/utils';
 
 function teacherTotalHours(t: Teacher): number {
@@ -40,6 +41,7 @@ export function TeachersPage() {
   });
   const [editing, setEditing] = useState<Teacher | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [assignTeacher, setAssignTeacher] = useState<Teacher | null>(null);
 
   const { data, isLoading, isFetching } = useTeachers(query);
   const deleteMut = useDeleteTeacher();
@@ -202,16 +204,14 @@ export function TeachersPage() {
                 </Td>
                 <Td>
                   <div className="flex flex-wrap justify-end gap-1">
-                    <Link
-                      to={`/admin/workload?assignedTeacherId=${teacher.id}`}
-                      className={cn(
-                        buttonVariants({ variant: 'primary', size: 'sm' }),
-                        'no-underline',
-                      )}
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setAssignTeacher(teacher)}
                     >
                       <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
                       <span>{t('teachers.list.assign_workload')}</span>
-                    </Link>
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -241,6 +241,12 @@ export function TeachersPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         teacher={editing}
+      />
+
+      <AssignWorkloadToTeacherModal
+        open={Boolean(assignTeacher)}
+        onClose={() => setAssignTeacher(null)}
+        teacher={assignTeacher}
       />
     </div>
   );

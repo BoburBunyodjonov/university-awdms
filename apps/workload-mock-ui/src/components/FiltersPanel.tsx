@@ -44,35 +44,33 @@ export function FiltersPanel({
     >
       <div className="flex items-center gap-2 text-zinc-700">
         <Filter className="h-4 w-4" />
-        <span className="text-sm font-medium">Filters</span>
+        <span className="text-sm font-medium">Filtrlar</span>
       </div>
       <div className="grid flex-1 gap-3 sm:grid-cols-3">
         <label className="block">
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-            Semester
+            Semestr
           </span>
           <select
             value={semester}
             onChange={(e) => onSemester(e.target.value as SemesterFilter)}
             className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm shadow-sm"
           >
-            <option value="all">All</option>
-            <option value="fall">Fall</option>
-            <option value="spring">Spring</option>
+            <option value="all">Barcha semestr</option>
+            <option value="fall">1-semestr (Kuz)</option>
+            <option value="spring">2-semestr (Bahor)</option>
           </select>
         </label>
         <label className="block">
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-            Workload type
+            Yuklama turi
           </span>
           <select
             value={type}
-            onChange={(e) =>
-              onType(e.target.value as WorkloadKind | 'all')
-            }
+            onChange={(e) => onType(e.target.value as WorkloadKind | 'all')}
             className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm shadow-sm"
           >
-            <option value="all">All types</option>
+            <option value="all">Barcha tur</option>
             {ALL_KINDS.map((k) => (
               <option key={k} value={k}>
                 {KIND_LABEL[k]}
@@ -82,7 +80,7 @@ export function FiltersPanel({
         </label>
         <label className="block">
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-            Category
+            Kategoriya
           </span>
           <select
             value={category}
@@ -91,9 +89,9 @@ export function FiltersPanel({
             }
             className="h-9 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm shadow-sm"
           >
-            <option value="all">All</option>
-            <option value="auditorium">Auditorium</option>
-            <option value="non_auditorium">Non-auditorium</option>
+            <option value="all">Hammasi</option>
+            <option value="auditorium">Auditoriya</option>
+            <option value="non_auditorium">Tashqari</option>
           </select>
         </label>
       </div>

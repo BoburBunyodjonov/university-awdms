@@ -1,4 +1,14 @@
-export type Degree = 'PhD' | 'NoDegree';
+export type Degree = 'PhD' | 'Magistr' | 'NoDegree';
+
+export const DEGREE_LABEL: Record<Degree, string> = {
+  PhD: 'PhD',
+  Magistr: 'Magistr',
+  NoDegree: 'Daraja yo‘q',
+};
+
+export function isPhd(degree: Degree): boolean {
+  return degree === 'PhD';
+}
 
 export type SemesterFilter = 'all' | 'fall' | 'spring';
 
@@ -86,18 +96,34 @@ export interface MockStore {
 }
 
 export const KIND_LABEL: Record<WorkloadKind, string> = {
-  lecture: 'Lecture',
-  practice: 'Practice',
-  control: 'Control',
-  individual_project: 'Individual project',
-  vqr_day: 'VQR (Day)',
-  vqr_parttime: 'VQR (Part-time)',
-  internship: 'Internship',
-  prediploma: 'Pre-diploma',
-  scientific_pedagogical: 'Scientific pedagogical work',
-  scientific_internship: 'Scientific internship',
-  phd_supervision_parttime: 'PhD supervision (Part-time)',
-  phd_supervision_fulltime: 'PhD supervision (Full-time)',
+  lecture: "Ma'ruza (Лекция)",
+  practice: 'Amaliyot (Практика)',
+  control: 'Nazorat ishi',
+  individual_project: 'Individual loyiha',
+  vqr_day: 'VQR — Kunduzgi',
+  vqr_parttime: 'VQR — Sirtqi',
+  internship: 'Kafedra amaliyoti',
+  prediploma: 'Diplom oldi amaliyoti',
+  scientific_pedagogical: 'Ilmiy-pedagogik ish (PhD)',
+  scientific_internship: 'Ilmiy stajyorlik (PhD)',
+  phd_supervision_parttime: 'PhD rahbarlik — sirtqi',
+  phd_supervision_fulltime: 'PhD rahbarlik — kunduzgi',
+};
+
+/** Short badge label (Tur column on teacher profile) */
+export const KIND_SHORT_LABEL: Record<WorkloadKind, string> = {
+  lecture: "Ma'ruza",
+  practice: 'Amaliyot',
+  control: 'Nazorat',
+  individual_project: 'Individual loyiha',
+  vqr_day: 'VQR (Kunduzgi)',
+  vqr_parttime: 'VQR (Sirtqi)',
+  internship: 'Kafedra amaliyoti',
+  prediploma: 'Diplom oldi',
+  scientific_pedagogical: 'Ilmiy-pedagogik (PhD)',
+  scientific_internship: 'Ilmiy stajyorlik (PhD)',
+  phd_supervision_parttime: 'PhD (sirtqi)',
+  phd_supervision_fulltime: 'PhD (kunduzgi)',
 };
 
 export const KIND_CATEGORY: Record<WorkloadKind, WorkloadCategory> = {

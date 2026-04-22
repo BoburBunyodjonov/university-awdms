@@ -3,8 +3,8 @@ import { BookOpen, LayoutDashboard, Users } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 const links = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/teachers', label: 'Teachers', icon: Users, end: false },
+  { to: '/', label: 'Bosh sahifa', icon: LayoutDashboard, end: true },
+  { to: '/teachers', label: "O'qituvchilar", icon: Users, end: false },
 ];
 
 export function AppShell() {
@@ -17,9 +17,9 @@ export function AppShell() {
               <BookOpen className="h-4 w-4" />
             </div>
             <div className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold">AWDMS</span>
+              <span className="text-sm font-semibold">Akademik Yuklamalar</span>
               <span className="text-[10px] font-medium text-zinc-500">
-                Workload (mock)
+                2024–2025 · 1-semestr
               </span>
             </div>
           </Link>
@@ -49,7 +49,7 @@ export function AppShell() {
         <Outlet />
       </main>
       <footer className="border-t border-zinc-200/60 bg-white py-6 text-center text-xs text-zinc-500">
-        Mock UI only — no backend. Built with React + Tailwind.
+        Mock UI — backendsiz. React + Tailwind asosida.
       </footer>
     </div>
   );

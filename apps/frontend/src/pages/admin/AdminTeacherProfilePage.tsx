@@ -7,16 +7,19 @@ import {
   BookOpen,
   Clock,
   Download,
+  Plus,
   Users,
 } from 'lucide-react';
-import type { WorkloadType } from '@awdms/shared';
+import type { Teacher, WorkloadType } from '@awdms/shared';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable, Td, Th } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { PageLoader } from '@/components/ui/page-loader';
-import { useTeacherWorkload } from '@/features/teachers/api';
+import { useTeacherWorkload, useTeachers } from '@/features/teachers/api';
 import { useAcademicYears } from '@/features/academic-years/api';
+import { LIST_PAGE_SIZE_MAX } from '@/lib/pagination';
+import { AssignWorkloadToTeacherModal } from '@/features/workload/AssignWorkloadToTeacherModal';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -54,6 +57,17 @@ export function AdminTeacherProfilePage() {
   const [yearId, setYearId] = useState<string>('');
   const [termFilter, setTermFilter] = useState<TermFilter>('all');
   const [typeFilter, setTypeFilter] = useState<WorkloadType | ''>('');
+  const [assignOpen, setAssignOpen] = useState(false);
+
+  // Fetch latest teacher record (for hours/norm used by AssignWorkloadModal)
+  const { data: teachersList } = useTeachers({
+    page: 1,
+    pageSize: LIST_PAGE_SIZE_MAX,
+    isActive: true,
+  });
+  const teacherFull: Teacher | null = useMemo(() => {
+    return teachersList?.items.find((tc) => tc.id === teacherId) ?? null;
+  }, [teachersList, teacherId]);
 
   const effectiveYearId =
     yearId || years?.find((y) => y.isActive)?.id || years?.[0]?.id;
@@ -201,6 +215,10 @@ export function AdminTeacherProfilePage() {
             <Download className="h-4 w-4" aria-hidden="true" />
             <span>{t('common.export_excel')}</span>
           </Button>
+          <Button onClick={() => setAssignOpen(true)} disabled={!teacherFull}>
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            <span>{t('workload.assign_to_teacher.title')}</span>
+          </Button>
         </div>
       </div>
 
@@ -322,6 +340,12 @@ export function AdminTeacherProfilePage() {
           </tbody>
         </DataTable>
       </Card>
+
+      <AssignWorkloadToTeacherModal
+        open={assignOpen}
+        onClose={() => setAssignOpen(false)}
+        teacher={teacherFull}
+      />
     </div>
   );
 }

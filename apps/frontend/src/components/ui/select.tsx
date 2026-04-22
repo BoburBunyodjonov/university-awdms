@@ -16,10 +16,20 @@ export interface SelectOption {
   disabled?: boolean;
 }
 
+export interface SelectOptionGroup {
+  label: string;
+  options: SelectOption[];
+}
+
 export interface SelectProps {
   value: string | undefined | null;
   onValueChange: (value: string | undefined) => void;
-  options: SelectOption[];
+  options?: SelectOption[];
+  /**
+   * Grouped options — renders Radix `Select.Group` + `Select.Label` headers
+   * per group. If provided, `options` is ignored.
+   */
+  groupedOptions?: SelectOptionGroup[];
   placeholder?: string;
   /**
    * When true, a top-of-list item clears the selection (value → undefined).
@@ -52,6 +62,7 @@ export function Select({
   value,
   onValueChange,
   options,
+  groupedOptions,
   placeholder,
   clearable,
   clearLabel,
@@ -65,6 +76,10 @@ export function Select({
   ...aria
 }: SelectProps) {
   const radixValue = value && value.length > 0 ? value : undefined;
+  const flatOptions = options ?? [];
+  const totalOptionCount =
+    flatOptions.length +
+    (groupedOptions?.reduce((n, g) => n + g.options.length, 0) ?? 0);
 
   return (
     <RadixSelect.Root
@@ -134,32 +149,24 @@ export function Select({
                 </RadixSelect.ItemText>
               </RadixSelect.Item>
             ) : null}
-            {options.map((o) => (
-              <RadixSelect.Item
-                key={o.value}
-                value={o.value}
-                disabled={o.disabled}
-                className={itemClasses}
-              >
-                {o.icon ? (
-                  <span className="shrink-0 text-zinc-500" aria-hidden="true">
-                    {o.icon}
-                  </span>
-                ) : null}
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <RadixSelect.ItemText>{o.label}</RadixSelect.ItemText>
-                  {o.description ? (
-                    <span className="truncate text-[10px] text-zinc-500">
-                      {o.description}
-                    </span>
-                  ) : null}
-                </div>
-                <RadixSelect.ItemIndicator className="ml-2 shrink-0 text-blue-600">
-                  <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                </RadixSelect.ItemIndicator>
-              </RadixSelect.Item>
-            ))}
-            {options.length === 0 && !clearable ? (
+            {groupedOptions
+              ? groupedOptions.map((group, idx) => (
+                  <RadixSelect.Group key={`${group.label}-${idx}`}>
+                    <RadixSelect.Label className="px-2 pb-1 pt-2 text-[10px] font-bold uppercase tracking-wide text-zinc-500">
+                      {group.label}
+                    </RadixSelect.Label>
+                    {group.options.map((o) => (
+                      <SelectItemInner key={o.value} option={o} />
+                    ))}
+                    {idx < groupedOptions.length - 1 ? (
+                      <RadixSelect.Separator className="my-1 h-px bg-zinc-100" />
+                    ) : null}
+                  </RadixSelect.Group>
+                ))
+              : flatOptions.map((o) => (
+                  <SelectItemInner key={o.value} option={o} />
+                ))}
+            {totalOptionCount === 0 && !clearable ? (
               <div className="px-2 py-1.5 text-xs italic text-zinc-400">
                 No options
               </div>
@@ -180,3 +187,30 @@ const itemClasses = cn(
   'data-[state=checked]:font-medium',
   'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
 );
+
+function SelectItemInner({ option: o }: { option: SelectOption }) {
+  return (
+    <RadixSelect.Item
+      value={o.value}
+      disabled={o.disabled}
+      className={itemClasses}
+    >
+      {o.icon ? (
+        <span className="shrink-0 text-zinc-500" aria-hidden="true">
+          {o.icon}
+        </span>
+      ) : null}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <RadixSelect.ItemText>{o.label}</RadixSelect.ItemText>
+        {o.description ? (
+          <span className="truncate text-[10px] text-zinc-500">
+            {o.description}
+          </span>
+        ) : null}
+      </div>
+      <RadixSelect.ItemIndicator className="ml-2 shrink-0 text-blue-600">
+        <Check className="h-3.5 w-3.5" aria-hidden="true" />
+      </RadixSelect.ItemIndicator>
+    </RadixSelect.Item>
+  );
+}

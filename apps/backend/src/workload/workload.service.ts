@@ -165,6 +165,15 @@ export class WorkloadService {
       formulaConfigId: dto.formulaConfigId ?? null,
     });
 
+    // Allow caller (smart modal / adhoc assignment) to supply an explicit
+    // plannedHours value. This is used when the caller computed hours from
+    // UI inputs (e.g. fixed × groups) that aren't expressible as a registered
+    // formula. When omitted or zero, fall back to formula-driven hours.
+    const effectiveHours =
+      dto.plannedHours !== undefined && dto.plannedHours > 0
+        ? dto.plannedHours
+        : plannedHours.hours;
+
     const created = await this.prisma.workloadItem.create({
       data: {
         academicYearId: dto.academicYearId,
@@ -174,7 +183,7 @@ export class WorkloadService {
         workloadType: dto.workloadType,
         category: categoryOf(dto.workloadType as WorkloadType),
         studentCount: context.studentCount,
-        plannedHours: plannedHours.hours,
+        plannedHours: effectiveHours,
         formulaConfigId: plannedHours.formulaId,
         requiresDegree: requiresScientificDegree(
           dto.workloadType as WorkloadType,
@@ -424,6 +433,7 @@ export class WorkloadService {
         fullName: true,
         isActive: true,
         hasScientificDegree: true,
+        annualNorm: true,
       },
     });
     if (!teacher) throw new BadRequestException(`Teacher not found`);
@@ -440,6 +450,10 @@ export class WorkloadService {
       item.studentCount,
       teacher.fullName,
     );
+    // Rule 6: yillik norma — o'qituvchiga tayinlangan barcha yuklama
+    // soatlari annualNorm'dan oshmasligi kerak. Reassign holatida eski
+    // tayinlash allaqachon teacher.id bo'lsa, qo'shilmaydi (idempotent).
+    await this.assertAnnualNorm(teacher, item.plannedHours, item.id);
 
     const oldTeacherId = item.assignedTeacherId;
     const updated = await this.prisma.$transaction(async (tx) => {
@@ -781,6 +795,39 @@ export class WorkloadService {
     throw new BadRequestException(
       `"${workloadType}" allows at most ${cap} students${teacherLabel}.`,
     );
+  }
+
+  /**
+   * Rule 6 (yillik norma): o'qituvchi yillik normasidan oshib tayinlanmasin.
+   * `excludeItemId` — reassign/self-assign holatlarida o'sha elementning eski
+   * soatlari ikki marta qo'shilmasligi uchun.
+   */
+  private async assertAnnualNorm(
+    teacher: { id: string; fullName: string; annualNorm: number },
+    addingHours: number,
+    excludeItemId?: string,
+  ) {
+    if (!Number.isFinite(teacher.annualNorm) || teacher.annualNorm <= 0) {
+      return;
+    }
+    const agg = await this.prisma.workloadItem.aggregate({
+      _sum: { plannedHours: true },
+      where: {
+        assignedTeacherId: teacher.id,
+        ...(excludeItemId ? { NOT: { id: excludeItemId } } : {}),
+      },
+    });
+    const currentHours = agg._sum.plannedHours ?? 0;
+    const projected = currentHours + addingHours;
+    if (projected > teacher.annualNorm) {
+      const overBy = projected - teacher.annualNorm;
+      throw new BadRequestException(
+        `Rule 6: ${teacher.fullName} yillik normasi ${teacher.annualNorm} soat. ` +
+          `Joriy tayinlash soat'larini qo'shganda jami ${projected.toFixed(
+            1,
+          )} soat bo'lib, normani ${overBy.toFixed(1)} soat'ga oshiradi.`,
+      );
+    }
   }
 
   private invalidateDerivedCaches() {

@@ -11,8 +11,41 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
   app.use(helmet());
+
+  /**
+   * CORS: parse comma-separated CORS_ORIGIN from env (trimmed, trailing slash
+   * stripped). In non-production, always allow local dev origins and any
+   * localhost / 127.0.0.1 port so Vite dev servers and mock UIs just work.
+   */
+  const envOrigins = (process.env.CORS_ORIGIN ?? '')
+    .split(',')
+    .map((o) => o.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+
+  const devOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:4173',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174',
+    'http://127.0.0.1:4173',
+    'http://127.0.0.1:3000',
+  ];
+
+  const allowList = new Set<string>([...envOrigins, ...devOrigins]);
+  const isProd = process.env.NODE_ENV === 'production';
+
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') ?? ['http://localhost:5173'],
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      const clean = origin.replace(/\/$/, '');
+      if (allowList.has(clean)) return cb(null, true);
+      if (!isProd && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(clean)) {
+        return cb(null, true);
+      }
+      return cb(null, false);
+    },
     credentials: true,
   });
   app.setGlobalPrefix('api');

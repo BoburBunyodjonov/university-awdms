@@ -2,6 +2,7 @@ import { Award, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 import type { Degree } from '@/types';
+import { DEGREE_LABEL } from '@/types';
 
 export function TeacherCard({
   id,
@@ -42,27 +43,25 @@ export function TeacherCard({
           </div>
           <div>
             <h3 className="font-semibold text-zinc-900">{name}</h3>
-            <p className="text-xs text-zinc-500">
-              {phd ? 'PhD' : 'No degree'}
-            </p>
+            <p className="text-xs text-zinc-500">{DEGREE_LABEL[degree]}</p>
           </div>
         </div>
         <div className="text-right">
           <p className="text-lg font-semibold text-zinc-900">
-            {totalHours.toFixed(0)}h
+            {totalHours.toFixed(0)}
           </p>
-          <p className="text-xs text-zinc-500">assigned</p>
+          <p className="text-xs text-zinc-500">soat biriktirilgan</p>
         </div>
       </div>
       <div className="flex items-center justify-between border-t border-dashed border-zinc-200 pt-3 text-sm">
-        <span className="text-zinc-500">Remaining norm</span>
+        <span className="text-zinc-500">Qolgan norm</span>
         <span
           className={cn(
             'font-medium',
             remainingNorm < 0 ? 'text-rose-600' : 'text-emerald-700',
           )}
         >
-          {remainingNorm.toFixed(0)}h
+          {remainingNorm.toFixed(0)} soat
         </span>
       </div>
       <div className="flex gap-2">
@@ -70,14 +69,14 @@ export function TeacherCard({
           to={`/teachers/${id}`}
           className="inline-flex h-9 flex-1 items-center justify-center rounded-lg border border-zinc-200 bg-white text-sm font-medium text-zinc-800 transition hover:bg-zinc-50"
         >
-          View profile
+          Profil
         </Link>
         <button
           type="button"
           onClick={onAssign}
-          className="inline-flex h-9 flex-1 items-center justify-center rounded-lg bg-zinc-900 text-sm font-medium text-white transition hover:bg-zinc-800"
+          className="inline-flex h-9 flex-1 items-center justify-center rounded-lg bg-indigo-600 text-sm font-medium text-white transition hover:bg-indigo-700"
         >
-          Assign
+          Tayinlash
         </button>
       </div>
     </div>

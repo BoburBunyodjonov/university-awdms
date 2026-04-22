@@ -73,7 +73,7 @@ export function PageLoading() {
   return (
     <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-zinc-500">
       <Loader2 className="h-8 w-8 animate-spin" />
-      <p className="text-sm">Loading…</p>
+      <p className="text-sm">Yuklanmoqda…</p>
     </div>
   );
 }

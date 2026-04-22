@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import type {
   AcademicTerm,
   AssignmentStatus,
+  CreateWorkloadItemInput,
   GenerateWorkloadInput,
   Language,
   StudyLevel,
@@ -127,6 +128,43 @@ export function useGenerateWorkload() {
         t('toasts.generated', {
           created: res.createdCount,
           skipped: res.skippedCount,
+        }),
+      );
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
+  });
+}
+
+/**
+ * Create a workload item, optionally assigning a teacher in the same flow.
+ * When `input.assignedTeacherId` is provided the create is immediately
+ * followed by POST /workload/:id/assign so Rule 1 / Rule 13 validation runs
+ * on the backend and the assignment_log is populated correctly.
+ */
+export function useCreateWorkload() {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: CreateWorkloadItemInput) => {
+      const { assignedTeacherId, status: _status, ...rest } = input;
+      const { data: created } = await api.post<WorkloadItemWithRelations>(
+        '/workload',
+        rest,
+      );
+      if (!assignedTeacherId) return created;
+      const { data: assigned } = await api.post<WorkloadItemWithRelations>(
+        `/workload/${created.id}/assign`,
+        { teacherId: assignedTeacherId },
+      );
+      return assigned;
+    },
+    onSuccess: (item) => {
+      qc.invalidateQueries({ queryKey: ['workload'] });
+      qc.invalidateQueries({ queryKey: ['teachers'] });
+      qc.invalidateQueries({ queryKey: ['teacher-workload'] });
+      toast.success(
+        t('toasts.assigned', {
+          name: item.assignedTeacher?.fullName ?? '',
         }),
       );
     },
