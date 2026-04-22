@@ -9,28 +9,42 @@ export function categoryOf(type: WorkloadType): WorkloadCategory {
     case 'practice':
     case 'lab':
     case 'control':
+    case 'individual_project':
     case 'course_project':
       return 'auditorium';
     case 'internship':
     case 'prediploma':
     case 'VQR':
+    case 'VQR_full_time':
+    case 'VQR_part_time':
     case 'MD':
     case 'NDP':
     case 'NS':
+    case 'phd_supervision_fulltime':
+    case 'phd_supervision_parttime':
+    case 'scientific_pedagogical':
+    case 'scientific_internship':
       return 'non_auditorium';
   }
 }
 
-// Rule 13: MD, NDP, NS must go to teachers with a scientific degree.
-// Per user policy (stricter than the baseline spec), lectures require a degreed
-// teacher as well — this is enforced via assignedTeacher.hasScientificDegree at
-// assignment time. Keep this helper as the single source of truth so Zod
-// validation, generation, and the assign endpoint all agree.
+// Rule 13: MD, NDP, NS must go to teachers with a scientific degree; module spec
+// PhD-only scientific work types as well. Lectures: stricter user policy in assign.
+/** Ma'ruza va amaliyot yuklamasi bo'linib ko'rinmasligi kerak (bitta qator). */
+export function isIndivisibleAuditoriumWorkload(
+  type: WorkloadType,
+): boolean {
+  return type === 'lecture' || type === 'practice';
+}
+
 export function requiresScientificDegree(type: WorkloadType): boolean {
   return (
-    type === 'lecture' ||
     type === 'MD' ||
     type === 'NDP' ||
-    type === 'NS'
+    type === 'NS' ||
+    type === 'phd_supervision_fulltime' ||
+    type === 'phd_supervision_parttime' ||
+    type === 'scientific_pedagogical' ||
+    type === 'scientific_internship'
   );
 }

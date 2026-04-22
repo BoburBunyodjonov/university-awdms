@@ -15,6 +15,11 @@ export interface MonitoringSummary {
   academicYearId: string | null;
   totals: {
     totalHours: number;
+    assignedHours: number;
+    unassignedHours: number;
+    totalDepartmentNorm: number;
+    remainingNormHours: number;
+    activeTeacherCount: number;
     auditoriumHours: number;
     nonAuditoriumHours: number;
     items: number;
@@ -29,6 +34,20 @@ export interface MonitoringSummary {
   underNorm: TeacherLoad[];
 }
 
+export interface RecentAssignmentRow {
+  id: string;
+  action: string;
+  createdAt: string;
+  workloadItemId: string;
+  workloadType: string;
+  plannedHours: number;
+  subjectName: string | null;
+  subjectCode: string | null;
+  oldTeacherName: string | null;
+  newTeacherName: string | null;
+  performedByName: string;
+}
+
 export function useMonitoringSummary(academicYearId?: string) {
   return useQuery<MonitoringSummary>({
     enabled: Boolean(academicYearId),
@@ -40,5 +59,24 @@ export function useMonitoringSummary(academicYearId?: string) {
       );
       return data;
     },
+    staleTime: 120_000,
+  });
+}
+
+export function useRecentAssignments(
+  academicYearId: string | undefined,
+  limit = 15,
+) {
+  return useQuery<RecentAssignmentRow[]>({
+    enabled: Boolean(academicYearId),
+    queryKey: ['monitoring-recent', academicYearId, limit],
+    queryFn: async () => {
+      const { data } = await api.get<RecentAssignmentRow[]>(
+        '/monitoring/recent-assignments',
+        { params: { academicYearId, limit } },
+      );
+      return data;
+    },
+    staleTime: 60_000,
   });
 }

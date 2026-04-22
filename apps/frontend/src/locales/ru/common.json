@@ -13,6 +13,7 @@
     "monitoring": "Мониторинг",
     "statistics": "Статистика",
     "reports": "Отчёты",
+    "profile": "Профиль",
     "logout": "Выход"
   },
   "auth": {
@@ -38,13 +39,20 @@
     "practice": "Практика",
     "lab": "Лабораторная",
     "control": "Контроль",
+    "individual_project": "Индивидуальный проект",
     "course_project": "Курсовая",
     "internship": "Практика (произв.)",
     "prediploma": "Преддипломная",
-    "VQR": "ВКР",
+    "VQR": "ВКР (legacy)",
+    "VQR_full_time": "ВКР (очная / полный день)",
+    "VQR_part_time": "ВКР (заочная / внешняя)",
     "MD": "МД",
     "NDP": "НДП",
-    "NS": "НС"
+    "NS": "НС",
+    "phd_supervision_fulltime": "Руководство PhD (очная)",
+    "phd_supervision_parttime": "Руководство PhD (заочная)",
+    "scientific_pedagogical": "Научно-педагогическая (канд. PhD)",
+    "scientific_internship": "Научная стажировка (PhD)"
   },
   "calculationMode": {
     "coefficient_based": "Коэффициентный",
@@ -60,7 +68,8 @@
     "unassigned": "Назначение снято",
     "generated": "Создано {{created}} новых элементов · пропущено {{skipped}}",
     "stream_created": "Поток создан",
-    "stream_updated": "Поток обновлён"
+    "stream_updated": "Поток обновлён",
+    "subjects_created_batch": "Создано «{{name}}» для {{count}} направлений"
   },
   "common": {
     "loading": "Загрузка...",
@@ -75,7 +84,34 @@
     "edit": "Изменить",
     "delete": "Удалить",
     "actions": "Действия",
-    "page_of": "Страница {{page}} из {{total}}"
+    "page_of": "Страница {{page}} из {{total}}",
+    "yes": "Да",
+    "no": "Нет"
+  },
+  "teacher_profile": {
+    "subtitle": "Профиль, плановая нагрузка и часы к годовой норме (фильтры влияют на таблицу и на карточки сводки).",
+    "card_title": "Карточка преподавателя",
+    "workload_section": "Нагрузка",
+    "filter_type": "Тип нагрузки",
+    "all_categories": "Все категории",
+    "assign_workload": "Назначить нагрузку",
+    "assign_modal_title": "Как назначается нагрузка",
+    "assign_modal_body": "Новая нагрузка и правки вносятся в кафедре или учебном офисе. При ошибке в данных обратитесь к администратору.",
+    "assign_modal_dismiss": "Понятно",
+    "kpi": {
+      "total_hours": "Всего часов",
+      "auditorium": "Аудиторные часы",
+      "non_auditorium": "Внеаудиторные часы",
+      "remaining_norm": "Остаток к норме",
+      "hours_left": "Осталось {{hours}} ч",
+      "over_norm": "Перегруз на {{hours}} ч"
+    },
+    "fields": {
+      "degree_enum": "Степень (PhD / NoDegree)"
+    },
+    "workload_items_count": "Назначенных позиций нагрузки",
+    "json_hint": "Фрагмент JSON модуля (полный список — в «Моя нагрузка»).",
+    "open_workload": "Моя нагрузка (кратко)"
   },
   "teachers": {
     "add": "Добавить преподавателя",
@@ -86,7 +122,21 @@
     "status_active": "Активен",
     "status_inactive": "Неактивен",
     "confirm_delete": "Удалить {{name}}? Если есть нагрузка — будет деактивирован.",
+    "back_to_list": "К списку преподавателей",
+    "admin_profile_hint": "Просмотр администратора: нагрузка, фильтры и выгрузка в Excel.",
+    "list": {
+      "col_name": "Имя",
+      "col_degree": "Степень",
+      "col_total_hours": "Всего часов",
+      "col_remaining_norm": "Остаток к норме",
+      "degree_phd": "PhD",
+      "degree_no": "Нет степени",
+      "over_norm": "+{{hours}} ч сверх нормы",
+      "assign_workload": "Назначить нагрузку"
+    },
     "fields": {
+      "auditoriumHoursCol": "Аудит. (ч)",
+      "nonAuditoriumHoursCol": "Вне ауд. (ч)",
       "fullName": "ФИО",
       "position": "Должность",
       "degreeName": "Учёная степень",
@@ -141,11 +191,15 @@
     "edit_title": "Редактировать дисциплину",
     "total_suffix": "дисциплин",
     "confirm_delete": "Удалить дисциплину {{name}}? Нельзя, если есть связанные нагрузки.",
+    "no_directions_for_level": "Нет направлений для этого уровня. Сначала добавьте направления.",
+    "multi_select_placeholder": "Выберите одно или несколько направлений…",
     "fields": {
       "name": "Название",
       "code": "Код",
       "code_hint": "Необязательный короткий код, напр. CS101",
       "direction": "Направление",
+      "directions_multi": "Направления",
+      "directions_multi_hint": "Отдельная запись каталога на каждое направление. Выберите хотя бы одно.",
       "level": "Уровень",
       "offerings": "Нагрузок",
       "isActive": "Активна"
@@ -213,8 +267,30 @@
     "kpi": {
       "items": "Элементов",
       "totalHours": "Всего часов",
+      "totalDepartmentHours": "Всего часов по кафедре",
+      "assignedHours": "Назначенные часы",
+      "remainingNormHours": "Остаток к норме (кафедра)",
+      "deptNormHint": "Бюджет часов: {{hours}} ч (сумма норм активных преподавателей)",
+      "teacherCount": "Преподаватели (активны)",
+      "unassignedCount": "Неназначенные позиции",
+      "unassignedHoursSub": "ещё не закреплено: {{hours}} ч",
       "assigned": "Назначено",
       "unassigned": "Не назначено"
+    },
+    "kpiExtra": "Позиции нагрузки: {{items}} · Ошибок: {{invalid}}",
+    "assignmentAction": {
+      "assign": "Назначение",
+      "reassign": "Переназначение",
+      "unassign": "Снятие"
+    },
+    "recentAssignments": {
+      "title": "Последние назначения",
+      "when": "Когда",
+      "action": "Действие",
+      "workload": "Нагрузка",
+      "hours": "Часы",
+      "changes": "Кому / от кого",
+      "by": "Кем"
     },
     "category": { "title": "Часы по категории" },
     "byType": { "title": "Часы по типу нагрузки" },
@@ -234,6 +310,12 @@
     "annual": "Годовой итог",
     "fall": "Осенний семестр",
     "spring": "Весенний семестр",
+    "auditorium_kpi": "Аудиторные часы",
+    "non_auditorium_kpi": "Внеаудиторные часы",
+    "all_terms": "Все семестры",
+    "all_types": "Все типы",
+    "filter_semester": "Семестр",
+    "filter_type": "Тип",
     "category_split": "Ауд. / Внеауд.",
     "category_hint": "Часы по категориям",
     "norm_hint": "из нормы {{norm}} ч ({{pct}}%)",
@@ -244,6 +326,8 @@
   "workload": {
     "total_suffix": "элементов",
     "all_years": "Все годы",
+    "all_teachers": "Все преподаватели",
+    "teachers_filter_401": "Список преподавателей не загрузился: не авторизован (401). Войдите снова как admin или проверьте, что VITE_API_BASE_URL указывает на тот же API, что и при входе.",
     "all_types": "Все типы",
     "no_teacher": "— не назначен —",
     "assign_action": "Назначить",
@@ -252,7 +336,16 @@
     "planned": "планируется",
     "requires_degree": "Требуется учёная степень",
     "stream_of": "Поток:",
+    "stream_badge": "Поток лекций",
+    "stream_students": "студентов",
     "group": "Группа",
+    "fallbacks": {
+      "no_offering_detail": "Только учебный год {{year}} — нет привязки к дисциплине в этой строке"
+    },
+    "category": {
+      "auditorium": "Аудиторная",
+      "non_auditorium": "Внеаудиторная"
+    },
     "confirm_delete": "Удалить элемент нагрузки? История назначений будет потеряна.",
     "kpi": {
       "total": "Элементов",
@@ -263,6 +356,9 @@
     "fields": {
       "subject": "Дисциплина",
       "type": "Тип",
+      "group_or_stream": "Группа / поток",
+      "coefficient": "Коэффициент",
+      "category_col": "Категория",
       "scope": "Область",
       "students": "Студентов",
       "hours": "Часов",

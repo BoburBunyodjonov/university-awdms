@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Field } from '@/components/ui/field';
 import { useTeachers } from '@/features/teachers/api';
+import { LIST_PAGE_SIZE_MAX } from '@/lib/pagination';
 import {
   useAssignWorkload,
   type WorkloadItemWithRelations,
@@ -24,7 +25,8 @@ export function AssignTeacherModal({ open, onClose, item }: Props) {
   const { t } = useTranslation();
   const assignMut = useAssignWorkload();
   const { data: teachersList } = useTeachers({
-    pageSize: 100,
+    page: 1,
+    pageSize: LIST_PAGE_SIZE_MAX,
     isActive: true,
   });
 

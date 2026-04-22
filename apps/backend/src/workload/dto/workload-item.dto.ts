@@ -1,7 +1,9 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import {
+  AcademicTermEnum,
   AssignmentStatusEnum,
+  AssignWorkloadBySpecSchema,
   AssignWorkloadSchema,
   CreateWorkloadItemSchema,
   GenerateWorkloadSchema,
@@ -32,6 +34,9 @@ export class GenerateWorkloadDto extends createZodDto(
   GenerateWorkloadSchema,
 ) {}
 export class AssignWorkloadDto extends createZodDto(AssignWorkloadSchema) {}
+export class AssignWorkloadBySpecDto extends createZodDto(
+  AssignWorkloadBySpecSchema,
+) {}
 export class ReassignWorkloadDto extends createZodDto(ReassignWorkloadSchema) {}
 export class UnassignWorkloadDto extends createZodDto(UnassignWorkloadSchema) {}
 
@@ -43,6 +48,7 @@ export const WorkloadQuerySchema = z.object({
   lectureStreamId: z.string().uuid().optional(),
   groupId: z.string().uuid().optional(),
   assignedTeacherId: z.string().uuid().optional(),
+  academicTerm: AcademicTermEnum.optional(),
   workloadType: WorkloadTypeEnum.optional(),
   category: WorkloadCategoryEnum.optional(),
   status: AssignmentStatusEnum.optional(),

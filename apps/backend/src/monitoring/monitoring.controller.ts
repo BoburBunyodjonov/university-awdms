@@ -24,4 +24,16 @@ export class MonitoringController {
   unassigned(@Query('academicYearId') academicYearId?: string) {
     return this.monitoring.unassigned(academicYearId);
   }
+
+  @Get('recent-assignments')
+  @ApiOperation({
+    summary: 'Recent assignment log entries (assign / reassign / unassign)',
+  })
+  recentAssignments(
+    @Query('academicYearId') academicYearId?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const n = limit ? Number.parseInt(limit, 10) : 20;
+    return this.monitoring.recentAssignments(academicYearId, n);
+  }
 }

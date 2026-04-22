@@ -34,6 +34,7 @@ export function useFormulas(query: FormulasQuery = {}) {
       });
       return data;
     },
+    staleTime: 600_000,
   });
 }
 

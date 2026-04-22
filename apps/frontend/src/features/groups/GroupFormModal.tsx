@@ -208,39 +208,12 @@ export function GroupFormModal({ open, onClose, group }: Props) {
           />
         </Field>
 
-        <Field
-          label={t('groups.fields.semesterNumber')}
-          error={errors.semesterNumber?.message}
-        >
-          <Input
-            type="number"
-            min={1}
-            max={12}
-            {...register('semesterNumber', { valueAsNumber: true })}
-          />
-        </Field>
-
-        <Field
-          label={t('groups.fields.academicTerm')}
-          error={errors.academicTerm?.message}
-        >
-          <Controller
-            name="academicTerm"
-            control={control}
-            render={({ field }) => (
-              <Select
-                value={field.value}
-                onValueChange={(v) => field.onChange(v)}
-                onBlur={field.onBlur}
-                aria-invalid={Boolean(errors.academicTerm)}
-                options={[
-                  { value: 'fall', label: t('academicTerm.fall') },
-                  { value: 'spring', label: t('academicTerm.spring') },
-                ]}
-              />
-            )}
-          />
-        </Field>
+        {/* Semester / term: fixed defaults for new groups; on edit, existing DB values (hidden). */}
+        <input
+          type="hidden"
+          {...register('semesterNumber', { valueAsNumber: true })}
+        />
+        <input type="hidden" {...register('academicTerm')} />
 
         <Field
           label={t('groups.fields.studentCount')}

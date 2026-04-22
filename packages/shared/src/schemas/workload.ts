@@ -27,6 +27,14 @@ export const CreateWorkloadItemSchema = z
     status: AssignmentStatusEnum.default('unassigned'),
   })
   .superRefine((v, ctx) => {
+    if (v.workloadType === 'VQR') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['workloadType'],
+        message:
+          'Legacy "VQR" is not valid for new items. Use VQR_full_time (day) or VQR_part_time (external).',
+      });
+    }
     if (v.workloadType === 'practice' && !v.lectureStreamId) {
       ctx.addIssue({
         code: 'custom',
@@ -50,6 +58,22 @@ export const CreateWorkloadItemSchema = z
         message: `workloadType "${v.workloadType}" requiresDegree must be ${expectedDegree} (Rule 13)`,
       });
     }
+    if (
+      (v.workloadType === 'MD' ||
+        v.workloadType === 'NDP' ||
+        v.workloadType === 'NS' ||
+        v.workloadType === 'phd_supervision_fulltime' ||
+        v.workloadType === 'phd_supervision_parttime' ||
+        v.workloadType === 'scientific_pedagogical' ||
+        v.workloadType === 'scientific_internship') &&
+      v.studentCount > 3
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['studentCount'],
+        message: `workloadType "${v.workloadType}" allows at most 3 students per item`,
+      });
+    }
   });
 export type CreateWorkloadItemInput = z.infer<typeof CreateWorkloadItemSchema>;
 
@@ -63,6 +87,15 @@ export const AssignWorkloadSchema = z.object({
   teacherId: z.string().uuid(),
 });
 export type AssignWorkloadInput = z.infer<typeof AssignWorkloadSchema>;
+
+/** POST /workload/assign (module spec) — same semantics as POST /workload/:id/assign */
+export const AssignWorkloadBySpecSchema = z
+  .object({
+    workloadItemId: z.string().uuid(),
+    teacherId: z.string().uuid(),
+  })
+  .strict();
+export type AssignWorkloadBySpecInput = z.infer<typeof AssignWorkloadBySpecSchema>;
 
 export const ReassignWorkloadSchema = z.object({
   teacherId: z.string().uuid(),

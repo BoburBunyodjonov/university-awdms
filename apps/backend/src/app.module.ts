@@ -16,13 +16,16 @@ import { AcademicYearsModule } from './academic-years/academic-years.module';
 import { WorkloadModule } from './workload/workload.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
 import { ExportsModule } from './exports/exports.module';
+import { ImportsModule } from './excel-import/imports.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
+    CommonModule,
     PrismaModule,
     AuthModule,
     TeachersModule,
@@ -36,6 +39,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
     WorkloadModule,
     MonitoringModule,
     ExportsModule,
+    ImportsModule,
   ],
   providers: [
     // Every endpoint is protected by default — use @Public() to opt out.

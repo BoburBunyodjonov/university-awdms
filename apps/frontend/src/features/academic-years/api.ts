@@ -9,5 +9,6 @@ export function useAcademicYears() {
       const { data } = await api.get<AcademicYear[]>('/academic-years');
       return data;
     },
+    staleTime: 600_000,
   });
 }

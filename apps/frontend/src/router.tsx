@@ -7,6 +7,7 @@ import { PublicLayout } from '@/components/layout/PublicLayout';
 import { HomePage } from '@/pages/public/HomePage';
 import { LoginPage } from '@/pages/public/LoginPage';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
+import { AdminTeacherProfilePage } from '@/pages/admin/AdminTeacherProfilePage';
 import { TeachersPage } from '@/pages/admin/TeachersPage';
 import { DirectionsPage } from '@/pages/admin/DirectionsPage';
 import { GroupsPage } from '@/pages/admin/GroupsPage';
@@ -16,6 +17,7 @@ import { FormulasPage } from '@/pages/admin/FormulasPage';
 import { LectureStreamsPage } from '@/pages/admin/LectureStreamsPage';
 import { WorkloadPage } from '@/pages/admin/WorkloadPage';
 import { TeacherDashboardPage } from '@/pages/teacher/TeacherDashboardPage';
+import { TeacherProfilePage } from '@/pages/teacher/TeacherProfilePage';
 import { ComingSoonPage } from '@/pages/common/ComingSoonPage';
 
 const soon = (title: string) => <ComingSoonPage title={title} />;
@@ -44,6 +46,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <AdminDashboardPage /> },
+      { path: 'teachers/:id', element: <AdminTeacherProfilePage /> },
       { path: 'teachers', element: <TeachersPage /> },
       { path: 'directions', element: <DirectionsPage /> },
       { path: 'groups', element: <GroupsPage /> },
@@ -70,9 +73,9 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <TeacherDashboardPage /> },
-      { path: 'load', element: soon('My workload') },
+      { path: 'load', element: <TeacherDashboardPage /> },
       { path: 'statistics', element: soon('My statistics') },
-      { path: 'profile', element: soon('Profile') },
+      { path: 'profile', element: <TeacherProfilePage /> },
     ],
   },
   { path: '*', element: <Navigate to="/" replace /> },

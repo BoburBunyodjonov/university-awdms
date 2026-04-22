@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import ExcelJS from 'exceljs';
 import { PrismaService } from '../prisma/prisma.service';
 import { MonitoringService } from '../monitoring/monitoring.service';
@@ -9,6 +9,30 @@ export class ExportsService {
     private readonly prisma: PrismaService,
     private readonly monitoring: MonitoringService,
   ) {}
+
+  /**
+   * Resolves the academic year for exports: explicit id, else the single active year.
+   */
+  async resolveAcademicYearId(academicYearId?: string) {
+    if (academicYearId) {
+      const y = await this.prisma.academicYear.findUnique({
+        where: { id: academicYearId },
+        select: { id: true },
+      });
+      if (!y) throw new NotFoundException(`Academic year ${academicYearId} not found`);
+      return y.id;
+    }
+    const active = await this.prisma.academicYear.findFirst({
+      where: { isActive: true },
+      select: { id: true },
+    });
+    if (!active) {
+      throw new BadRequestException(
+        'academicYearId is required (no active academic year configured)',
+      );
+    }
+    return active.id;
+  }
 
   /**
    * Produce a department-wide workload workbook for a given academic year.
@@ -163,10 +187,14 @@ export class ExportsService {
 
     s.addRow(['Totals']).font = { bold: true };
     s.addRow(['Total hours', summary.totals.totalHours]);
+    s.addRow(['Assigned hours (on teachers)', summary.totals.assignedHours]);
+    s.addRow(['Department norm (sum, active teachers)', summary.totals.totalDepartmentNorm]);
+    s.addRow(['Remaining norm (dept.)', summary.totals.remainingNormHours]);
+    s.addRow(['Active teachers', summary.totals.activeTeacherCount]);
     s.addRow(['Auditorium hours', summary.totals.auditoriumHours]);
     s.addRow(['Non-auditorium hours', summary.totals.nonAuditoriumHours]);
     s.addRow(['Items', summary.totals.items]);
-    s.addRow(['Assigned', summary.totals.assigned]);
+    s.addRow(['Assigned items', summary.totals.assigned]);
     s.addRow(['Unassigned', summary.totals.unassigned]);
     s.addRow(['Invalid', summary.totals.invalid]);
     s.addRow([]);

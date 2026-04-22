@@ -34,8 +34,8 @@ export const CreateGroupSchema = z.object({
   level: StudyLevelEnum,
   studyType: StudyTypeEnum,
   courseYear: z.number().int().min(1).max(6),
-  semesterNumber: z.number().int().min(1).max(12),
-  academicTerm: AcademicTermEnum,
+  semesterNumber: z.coerce.number().int().min(1).max(12).default(1),
+  academicTerm: AcademicTermEnum.default('fall'),
   language: LanguageEnum,
   studentCount: z.number().int().min(1).max(1000),
 });

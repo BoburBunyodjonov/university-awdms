@@ -89,6 +89,8 @@ export function FormulasPage() {
                   'lab',
                   'course_project',
                   'VQR',
+                  'VQR_full_time',
+                  'VQR_part_time',
                   'MD',
                   'NDP',
                   'NS',

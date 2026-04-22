@@ -17,6 +17,7 @@ import {
   UpdateTeacherDto,
 } from './dto/teacher.dto';
 import { TeachersService } from './teachers.service';
+import { WorkloadService } from '../workload/workload.service';
 
 // §3.1: Admin manages teachers. Teacher role has separate self-read endpoints
 // (/api/teachers/:id/workload etc) which will arrive with the workload module.
@@ -25,7 +26,10 @@ import { TeachersService } from './teachers.service';
 @Controller('teachers')
 @Roles('admin')
 export class TeachersController {
-  constructor(private readonly teachers: TeachersService) {}
+  constructor(
+    private readonly teachers: TeachersService,
+    private readonly workload: WorkloadService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List teachers (paginated, searchable)' })
@@ -37,6 +41,17 @@ export class TeachersController {
   @ApiOperation({ summary: 'Create a teacher (§4.2)' })
   create(@Body() dto: CreateTeacherDto) {
     return this.teachers.create(dto);
+  }
+
+  @Get(':id/workload')
+  @ApiOperation({
+    summary: 'GET /api/teachers/:id/workload — full summary + items (module spec)',
+  })
+  teacherWorkload(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('academicYearId') academicYearId?: string,
+  ) {
+    return this.workload.teacherSummary(id, academicYearId);
   }
 
   @Get(':id')

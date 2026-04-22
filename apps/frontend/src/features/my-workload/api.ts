@@ -9,8 +9,12 @@ export interface MyWorkloadSummary {
     position: string;
     degreeName: string;
     hasScientificDegree: boolean;
+    /** Module JSON: "PhD" | "NoDegree" */
+    degree: 'PhD' | 'NoDegree';
     annualNorm: number;
   };
+  /** Alias of `items` (teacher_workload_module.md) */
+  assignedWorkloads: WorkloadItemWithRelations[];
   totals: {
     totalHours: number;
     auditoriumHours: number;

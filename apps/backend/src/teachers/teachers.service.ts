@@ -42,8 +42,39 @@ export class TeachersService {
       this.prisma.teacher.count({ where }),
     ]);
 
+    const teacherIds = items.map((t) => t.id);
+    const hoursByTeacher = new Map<
+      string,
+      { aud: number; non: number }
+    >();
+    if (teacherIds.length > 0) {
+      const groupSums = await this.prisma.workloadItem.groupBy({
+        by: ['assignedTeacherId', 'category'],
+        where: { assignedTeacherId: { in: teacherIds } },
+        _sum: { plannedHours: true },
+      });
+      for (const row of groupSums) {
+        const id = row.assignedTeacherId;
+        if (!id) continue;
+        const h = row._sum.plannedHours ?? 0;
+        const o = hoursByTeacher.get(id) ?? { aud: 0, non: 0 };
+        if (row.category === 'auditorium') o.aud += h;
+        else o.non += h;
+        hoursByTeacher.set(id, o);
+      }
+    }
+
+    const itemsWithHours = items.map((t) => {
+      const h = hoursByTeacher.get(t.id) ?? { aud: 0, non: 0 };
+      return {
+        ...t,
+        auditoriumHours: h.aud,
+        nonAuditoriumHours: h.non,
+      };
+    });
+
     return {
-      items,
+      items: itemsWithHours,
       total,
       page: q.page,
       pageSize: q.pageSize,
@@ -55,6 +86,59 @@ export class TeachersService {
     const teacher = await this.prisma.teacher.findUnique({ where: { id } });
     if (!teacher) throw new NotFoundException(`Teacher ${id} not found`);
     return teacher;
+  }
+
+  /**
+   * Simplified module profile: summary fields plus a compact `assignedWorkloads`
+   * list (hujjatdagi soddalashgan ko‘rinish). To‘liq qatorlar GET /teachers/:id/workload
+   * / my-workload orqali ham mavjud.
+   */
+  async getModuleProfile(teacherId: string) {
+    const t = await this.findOne(teacherId);
+    const items = await this.prisma.workloadItem.findMany({
+      where: { assignedTeacherId: teacherId },
+      orderBy: [
+        { subjectOffering: { academicTerm: 'asc' } },
+        { workloadType: 'asc' },
+        { createdAt: 'desc' },
+      ],
+      select: {
+        id: true,
+        workloadType: true,
+        plannedHours: true,
+        status: true,
+        subjectOffering: {
+          select: {
+            academicTerm: true,
+            courseYear: true,
+            semesterNumber: true,
+            subject: { select: { code: true, name: true } },
+          },
+        },
+      },
+    });
+    const assignedWorkloads = items.map((i) => ({
+      id: i.id,
+      workloadType: i.workloadType,
+      plannedHours: i.plannedHours,
+      status: i.status,
+      subjectCode: i.subjectOffering?.subject.code ?? null,
+      subjectName: i.subjectOffering?.subject.name ?? null,
+      academicTerm: i.subjectOffering?.academicTerm ?? null,
+      courseYear: i.subjectOffering?.courseYear ?? null,
+      semesterNumber: i.subjectOffering?.semesterNumber ?? null,
+    }));
+    return {
+      fullName: t.fullName,
+      degree: t.hasScientificDegree ? 'PhD' : 'NoDegree',
+      annualNorm: t.annualNorm,
+      position: t.position,
+      degreeName: t.degreeName,
+      hasScientificDegree: t.hasScientificDegree,
+      isActive: t.isActive,
+      assignedWorkloads,
+      workloadItemsCount: items.length,
+    };
   }
 
   create(dto: CreateTeacherDto) {

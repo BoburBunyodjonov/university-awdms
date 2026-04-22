@@ -14,6 +14,7 @@ import { Select } from '@/components/ui/select';
 import { Field } from '@/components/ui/field';
 import { useSubjectOfferings } from '@/features/subject-offerings/api';
 import { api } from '@/lib/api';
+import { LIST_PAGE_SIZE_MAX } from '@/lib/pagination';
 import { useQuery } from '@tanstack/react-query';
 import {
   useCreateStream,
@@ -62,7 +63,10 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
   const createMut = useCreateStream();
   const updateMut = useUpdateStream(stream?.id ?? '');
 
-  const { data: offeringsList } = useSubjectOfferings({ pageSize: 100 });
+  const { data: offeringsList } = useSubjectOfferings({
+    page: 1,
+    pageSize: LIST_PAGE_SIZE_MAX,
+  });
 
   const {
     register,

@@ -49,13 +49,21 @@ enum WorkloadType {
   practice
   lab
   control
+  individual_project
   course_project
   internship
   prediploma
+  // Legacy undifferentiated VQR; migrate rows to VQR_full_time or VQR_part_time.
   VQR
+  VQR_full_time
+  VQR_part_time
   MD
   NDP
   NS
+  phd_supervision_fulltime
+  phd_supervision_parttime
+  scientific_pedagogical
+  scientific_internship
 }
 
 enum WorkloadCategory {
@@ -88,11 +96,20 @@ enum FormulaScope {
   control
   practice
   lab
+  individual_project
   course_project
+  internship
+  prediploma
   VQR
+  VQR_full_time
+  VQR_part_time
   MD
   NDP
   NS
+  phd_supervision_fulltime
+  phd_supervision_parttime
+  scientific_pedagogical
+  scientific_internship
 }
 
 enum AssignmentAction {
@@ -385,6 +402,7 @@ model WorkloadItem {
   formulaConfigId   String?          @db.Uuid
   formulaConfig     FormulaConfig?   @relation(fields: [formulaConfigId], references: [id], onDelete: SetNull)
   requiresDegree    Boolean          @default(false)
+  maxStudentsAllowed Int?
   assignedTeacherId String?          @db.Uuid
   assignedTeacher   Teacher?         @relation("AssignedTeacher", fields: [assignedTeacherId], references: [id], onDelete: SetNull)
   status            AssignmentStatus @default(unassigned)

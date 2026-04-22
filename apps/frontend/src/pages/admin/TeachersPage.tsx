@@ -1,16 +1,15 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Award,
-  CheckCircle2,
-  CircleSlash,
   Pencil,
   Plus,
   Search,
   Trash2,
+  UserPlus,
 } from 'lucide-react';
 import type { Teacher } from '@awdms/shared';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DataTable, Td, Th } from '@/components/ui/table';
 import {
@@ -20,6 +19,17 @@ import {
 } from '@/features/teachers/api';
 import { TeacherFormModal } from '@/features/teachers/TeacherFormModal';
 import { cn } from '@/lib/utils';
+
+function teacherTotalHours(t: Teacher): number {
+  return (t.auditoriumHours ?? 0) + (t.nonAuditoriumHours ?? 0);
+}
+
+function remainingNormHours(t: Teacher): { value: number; overBy: number } {
+  const total = teacherTotalHours(t);
+  const over = Math.max(0, total - t.annualNorm);
+  const value = Math.max(0, t.annualNorm - total);
+  return { value, overBy: over };
+}
 
 export function TeachersPage() {
   const { t } = useTranslation();
@@ -126,76 +136,104 @@ export function TeachersPage() {
       >
         <thead>
           <tr>
-            <Th>{t('teachers.fields.fullName')}</Th>
-            <Th>{t('teachers.fields.position')}</Th>
-            <Th>{t('teachers.fields.degreeName')}</Th>
-            <Th className="text-right">{t('teachers.fields.annualNorm')}</Th>
-            <Th>{t('teachers.fields.status')}</Th>
+            <Th>{t('teachers.list.col_name')}</Th>
+            <Th>{t('teachers.list.col_degree')}</Th>
+            <Th className="text-right">{t('teachers.list.col_total_hours')}</Th>
+            <Th className="text-right">
+              {t('teachers.fields.auditoriumHoursCol')}
+            </Th>
+            <Th className="text-right">
+              {t('teachers.fields.nonAuditoriumHoursCol')}
+            </Th>
+            <Th className="text-right">{t('teachers.list.col_remaining_norm')}</Th>
             <Th className="text-right">{t('common.actions')}</Th>
           </tr>
         </thead>
         <tbody>
-          {data?.items.map((teacher) => (
-            <tr key={teacher.id} className="hover:bg-zinc-50">
-              <Td className="font-medium text-zinc-900">
-                <div className="flex items-center gap-2">
-                  <span>{teacher.fullName}</span>
-                  {teacher.hasScientificDegree ? (
-                    <span
-                      className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-800"
-                      title={t('teachers.fields.hasScientificDegree')}
+          {data?.items.map((teacher) => {
+            const total = teacherTotalHours(teacher);
+            const { value: rem, overBy } = remainingNormHours(teacher);
+            return (
+              <tr
+                key={teacher.id}
+                className={cn(
+                  'hover:bg-zinc-50',
+                  !teacher.isActive && 'opacity-60',
+                )}
+              >
+                <Td className="font-medium text-zinc-900">
+                  <div className="flex flex-col gap-0.5">
+                    <Link
+                      to={`/admin/teachers/${teacher.id}`}
+                      className="text-zinc-900 hover:underline"
                     >
-                      <Award className="h-3 w-3" aria-hidden="true" />
-                      {t('teachers.degree_badge')}
+                      {teacher.fullName}
+                    </Link>
+                    {!teacher.isActive ? (
+                      <span className="text-[10px] font-normal text-zinc-500">
+                        {t('teachers.status_inactive')}
+                      </span>
+                    ) : null}
+                  </div>
+                </Td>
+                <Td className="text-sm text-zinc-800">
+                  {teacher.hasScientificDegree
+                    ? t('teachers.list.degree_phd')
+                    : t('teachers.list.degree_no')}
+                </Td>
+                <Td className="text-right tabular-nums text-zinc-900">
+                  {total.toFixed(1)}
+                </Td>
+                <Td className="text-right tabular-nums text-zinc-800">
+                  {(teacher.auditoriumHours ?? 0).toFixed(1)}
+                </Td>
+                <Td className="text-right tabular-nums text-zinc-800">
+                  {(teacher.nonAuditoriumHours ?? 0).toFixed(1)}
+                </Td>
+                <Td className="text-right text-sm">
+                  <span className="tabular-nums font-medium text-zinc-900">
+                    {rem.toFixed(1)}h
+                  </span>
+                  {overBy > 0 ? (
+                    <span className="ml-1.5 text-xs text-red-600">
+                      {t('teachers.list.over_norm', { hours: overBy.toFixed(1) })}
                     </span>
                   ) : null}
-                </div>
-              </Td>
-              <Td>{teacher.position}</Td>
-              <Td className="text-zinc-600">{teacher.degreeName}</Td>
-              <Td className="text-right tabular-nums">{teacher.annualNorm}</Td>
-              <Td>
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1 text-xs',
-                    teacher.isActive ? 'text-emerald-700' : 'text-zinc-500',
-                  )}
-                >
-                  {teacher.isActive ? (
-                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  ) : (
-                    <CircleSlash className="h-3.5 w-3.5" aria-hidden="true" />
-                  )}
-                  {teacher.isActive
-                    ? t('teachers.status_active')
-                    : t('teachers.status_inactive')}
-                </span>
-              </Td>
-              <Td>
-                <div className="flex justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEdit(teacher)}
-                    aria-label={t('common.edit')}
-                  >
-                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>{t('common.edit')}</span>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(teacher)}
-                    aria-label={t('common.delete')}
-                    className="text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>{t('common.delete')}</span>
-                  </Button>
-                </div>
-              </Td>
-            </tr>
-          ))}
+                </Td>
+                <Td>
+                  <div className="flex flex-wrap justify-end gap-1">
+                    <Link
+                      to={`/admin/workload?assignedTeacherId=${teacher.id}`}
+                      className={cn(
+                        buttonVariants({ variant: 'primary', size: 'sm' }),
+                        'no-underline',
+                      )}
+                    >
+                      <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
+                      <span>{t('teachers.list.assign_workload')}</span>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openEdit(teacher)}
+                      aria-label={t('common.edit')}
+                    >
+                      <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(teacher)}
+                      aria-label={t('common.delete')}
+                      className="text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                    </Button>
+                  </div>
+                </Td>
+              </tr>
+            );
+          })}
         </tbody>
       </DataTable>
 

@@ -17,22 +17,34 @@ import {
   AlertTriangle,
   Award,
   CheckCircle2,
-  ClipboardList,
+  Clock,
+  Hourglass,
   Layers,
+  UserCheck,
   Users,
 } from 'lucide-react';
 import type { WorkloadType } from '@awdms/shared';
 import { useAcademicYears } from '@/features/academic-years/api';
-import { useMonitoringSummary } from '@/features/monitoring/api';
+import {
+  useMonitoringSummary,
+  useRecentAssignments,
+} from '@/features/monitoring/api';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
 import { PageLoader } from '@/components/ui/page-loader';
+import { DataTable, Td, Th } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
 const CATEGORY_COLORS: Record<string, string> = {
   auditorium: '#3b82f6',
   non_auditorium: '#f59e0b',
 };
+
+/** Avoids "Cannot read properties of undefined (reading 'toFixed')" on API edges. */
+function fmtHours(value: unknown, fractionDigits = 1): string {
+  const x = Number(value);
+  return Number.isFinite(x) ? x.toFixed(fractionDigits) : (0).toFixed(fractionDigits);
+}
 
 export function AdminDashboardPage() {
   const { t } = useTranslation();
@@ -49,6 +61,20 @@ export function AdminDashboardPage() {
 
   const { data: summary, isLoading } =
     useMonitoringSummary(effectiveYearId);
+
+  const { data: recent = [], isLoading: recentLoading } = useRecentAssignments(
+    effectiveYearId,
+    20,
+  );
+
+  const actionLabel = useMemo(
+    () => ({
+      assign: t('dashboard.assignmentAction.assign'),
+      reassign: t('dashboard.assignmentAction.reassign'),
+      unassign: t('dashboard.assignmentAction.unassign'),
+    }),
+    [t],
+  );
 
   const categoryChartData = useMemo(
     () =>
@@ -71,13 +97,17 @@ export function AdminDashboardPage() {
 
   const teacherChartData = useMemo(
     () =>
-      (summary?.teachers ?? []).slice(0, 12).map((tl) => ({
-        name: tl.fullName.split(' ').slice(-1)[0] ?? tl.fullName,
-        fullName: tl.fullName,
-        assigned: Math.round(tl.assignedHours * 10) / 10,
-        norm: tl.annualNorm,
-        over: tl.delta > 0,
-      })),
+      (summary?.teachers ?? []).slice(0, 12).map((tl) => {
+        const assigned = Number(tl.assignedHours ?? 0);
+        const safe = Number.isFinite(assigned) ? assigned : 0;
+        return {
+          name: tl.fullName.split(' ').slice(-1)[0] ?? tl.fullName,
+          fullName: tl.fullName,
+          assigned: Math.round(safe * 10) / 10,
+          norm: Number(tl.annualNorm ?? 0) || 0,
+          over: (Number(tl.delta ?? 0) || 0) > 0,
+        };
+      }),
     [summary],
   );
 
@@ -103,36 +133,69 @@ export function AdminDashboardPage() {
 
       {isLoading && !summary ? <PageLoader label={t('common.loading')} /> : null}
 
-      <div className="grid grid-cols-4 gap-3">
-        <KpiCard
-          icon={ClipboardList}
-          label={t('dashboard.kpi.items')}
-          value={summary?.totals.items ?? '—'}
-        />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         <KpiCard
           icon={Layers}
-          label={t('dashboard.kpi.totalHours')}
+          label={t('dashboard.kpi.totalDepartmentHours')}
           value={
-            summary ? `${summary.totals.totalHours.toFixed(1)}h` : '—'
+            summary ? `${fmtHours(summary.totals.totalHours)}h` : '—'
           }
         />
         <KpiCard
           icon={CheckCircle2}
-          label={t('dashboard.kpi.assigned')}
-          value={summary?.totals.assigned ?? '—'}
-          tone={
-            summary && summary.totals.unassigned === 0 ? 'ok' : 'neutral'
+          label={t('dashboard.kpi.assignedHours')}
+          value={
+            summary
+              ? `${fmtHours(summary.totals.assignedHours)}h`
+              : '—'
           }
         />
         <KpiCard
+          icon={Hourglass}
+          label={t('dashboard.kpi.remainingNormHours')}
+          value={
+            summary
+              ? `${fmtHours(summary.totals.remainingNormHours)}h`
+              : '—'
+          }
+          sub={
+            summary
+              ? t('dashboard.kpi.deptNormHint', {
+                  hours: fmtHours(summary.totals.totalDepartmentNorm, 0),
+                })
+              : undefined
+          }
+        />
+        <KpiCard
+          icon={UserCheck}
+          label={t('dashboard.kpi.teacherCount')}
+          value={summary?.totals.activeTeacherCount ?? '—'}
+        />
+        <KpiCard
           icon={AlertTriangle}
-          label={t('dashboard.kpi.unassigned')}
+          label={t('dashboard.kpi.unassignedCount')}
           value={summary?.totals.unassigned ?? '—'}
+          sub={
+            summary && Number(summary.totals.unassignedHours ?? 0) > 0
+              ? t('dashboard.kpi.unassignedHoursSub', {
+                  hours: fmtHours(summary.totals.unassignedHours),
+                })
+              : undefined
+          }
           tone={
             summary && summary.totals.unassigned > 0 ? 'warn' : 'ok'
           }
         />
       </div>
+
+      {summary ? (
+        <p className="text-xs text-zinc-500">
+          {t('dashboard.kpiExtra', {
+            items: summary.totals.items,
+            invalid: summary.totals.invalid,
+          })}
+        </p>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
@@ -153,7 +216,9 @@ export function AdminDashboardPage() {
                     cy="50%"
                     innerRadius={50}
                     outerRadius={90}
-                    label={(p) => `${p.name} · ${Math.round(Number(p.value))}h`}
+                    label={(p) =>
+                      `${String(p.name)} · ${Math.round(Number(p.value ?? 0))}h`
+                    }
                   >
                     {categoryChartData.map((entry) => (
                       <Cell
@@ -163,7 +228,10 @@ export function AdminDashboardPage() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(v: number) => [`${v.toFixed(1)} h`, 'Hours']}
+                    formatter={(v: unknown) => [
+                      `${fmtHours(v)} h`,
+                      'Hours',
+                    ]}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -193,7 +261,10 @@ export function AdminDashboardPage() {
                   />
                   <YAxis fontSize={11} />
                   <Tooltip
-                    formatter={(v: number) => [`${v.toFixed(1)} h`, 'Hours']}
+                    formatter={(v: unknown) => [
+                      `${fmtHours(v)} h`,
+                      'Hours',
+                    ]}
                   />
                   <Bar dataKey="hours" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -202,6 +273,70 @@ export function AdminDashboardPage() {
           )}
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-4 w-4" aria-hidden="true" />
+            {t('dashboard.recentAssignments.title')}
+          </CardTitle>
+        </CardHeader>
+        <DataTable
+          isLoading={recentLoading}
+          empty={recent.length === 0 ? t('common.empty') : undefined}
+        >
+          <thead>
+            <tr>
+              <Th>{t('dashboard.recentAssignments.when')}</Th>
+              <Th>{t('dashboard.recentAssignments.action')}</Th>
+              <Th>{t('dashboard.recentAssignments.workload')}</Th>
+              <Th>{t('dashboard.recentAssignments.hours')}</Th>
+              <Th>{t('dashboard.recentAssignments.changes')}</Th>
+              <Th>{t('dashboard.recentAssignments.by')}</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {recent.map((r) => (
+              <tr key={r.id} className="hover:bg-zinc-50">
+                <Td className="whitespace-nowrap text-xs text-zinc-600">
+                  {new Date(r.createdAt).toLocaleString(undefined, {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                  })}
+                </Td>
+                <Td>
+                  <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs font-medium text-zinc-800">
+                    {actionLabel[r.action as keyof typeof actionLabel] ??
+                      r.action}
+                  </span>
+                </Td>
+                <Td className="text-sm text-zinc-900">
+                  <div className="font-medium">
+                    {r.subjectName ?? '—'}
+                  </div>
+                  <div className="text-[10px] text-zinc-500">
+                    {t(`workloadType.${r.workloadType as WorkloadType}`)}
+                    {r.subjectCode ? ` · ${r.subjectCode}` : ''}
+                  </div>
+                </Td>
+                <Td className="text-right tabular-nums text-sm">
+                  {fmtHours(r.plannedHours)}
+                </Td>
+                <Td className="text-xs text-zinc-700">
+                  <span className="text-zinc-500">
+                    {r.oldTeacherName ?? '—'}
+                  </span>
+                  <span className="mx-1">→</span>
+                  <span className="font-medium">
+                    {r.newTeacherName ?? '—'}
+                  </span>
+                </Td>
+                <Td className="text-xs text-zinc-600">{r.performedByName}</Td>
+              </tr>
+            ))}
+          </tbody>
+        </DataTable>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -231,10 +366,13 @@ export function AdminDashboardPage() {
                 />
                 <YAxis fontSize={11} />
                 <Tooltip
-                  formatter={(v: number, _n, { payload }) => [
-                    `${v.toFixed(1)} h`,
-                    (payload as { fullName: string }).fullName,
-                  ]}
+                  formatter={(v: unknown, _n, ctx) => {
+                    const payload = ctx?.payload as { fullName?: string } | undefined;
+                    return [
+                      `${fmtHours(v)} h`,
+                      payload?.fullName ?? '',
+                    ];
+                  }}
                 />
                 <Bar dataKey="assigned" radius={[4, 4, 0, 0]}>
                   {teacherChartData.map((d, idx) => (
@@ -293,8 +431,10 @@ export function AdminDashboardPage() {
                   ) : null}
                 </span>
                 <span className="tabular-nums">
-                  {tl.assignedHours.toFixed(1)} / {tl.annualNorm}h ·{' '}
-                  <span className="font-semibold">+{tl.delta.toFixed(1)}</span>
+                  {fmtHours(tl.assignedHours)} / {fmtHours(tl.annualNorm, 0)}h ·{' '}
+                  <span className="font-semibold">
+                    +{fmtHours(tl.delta)}
+                  </span>
                 </span>
               </li>
             ))}
@@ -310,11 +450,13 @@ function KpiCard({
   icon: Icon,
   label,
   value,
+  sub,
   tone = 'neutral',
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: number | string;
+  sub?: string;
   tone?: 'neutral' | 'ok' | 'warn';
 }) {
   return (
@@ -337,6 +479,11 @@ function KpiCard({
       >
         {value}
       </div>
+      {sub ? (
+        <div className="mt-0.5 line-clamp-2 text-[10px] text-zinc-500">
+          {sub}
+        </div>
+      ) : null}
     </div>
   );
 }

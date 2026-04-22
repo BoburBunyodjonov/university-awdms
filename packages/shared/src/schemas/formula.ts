@@ -9,6 +9,7 @@ import {
 // Rule 14: only admin may edit. Enforced at API guard level.
 // Schema-level rule: the required numeric field must be populated
 // for the given calculationMode.
+// Legacy VQR scope: rejected on create; existing rows are migrated to VQR_full_time.
 export const CreateFormulaConfigSchema = z
   .object({
     name: z.string().min(1).max(200),
@@ -27,6 +28,13 @@ export const CreateFormulaConfigSchema = z
   .superRefine((v, ctx) => {
     const addErr = (field: string, message: string) =>
       ctx.addIssue({ code: 'custom', path: [field], message });
+
+    if (v.scopeType === 'VQR') {
+      addErr(
+        'scopeType',
+        'Legacy "VQR" scope is not allowed. Use VQR_full_time or VQR_part_time.',
+      );
+    }
 
     switch (v.calculationMode) {
       case 'coefficient_based':
@@ -75,7 +83,17 @@ export const UpdateFormulaConfigSchema = z
     isActive: z.boolean().optional(),
     effectiveFrom: z.string().datetime().or(z.string().date()).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((v, ctx) => {
+    if (v.scopeType === 'VQR') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['scopeType'],
+        message:
+          'Legacy "VQR" scope is not allowed. Use VQR_full_time or VQR_part_time.',
+      });
+    }
+  });
 export type UpdateFormulaConfigInput = z.infer<
   typeof UpdateFormulaConfigSchema
 >;

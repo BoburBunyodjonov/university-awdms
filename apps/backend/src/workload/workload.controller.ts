@@ -16,6 +16,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/types/jwt-payload';
 import {
+  AssignWorkloadBySpecDto,
   AssignWorkloadDto,
   CreateWorkloadItemDto,
   GenerateWorkloadDto,
@@ -52,6 +53,23 @@ export class WorkloadController {
   })
   generate(@Body() dto: GenerateWorkloadDto) {
     return this.workload.generate(dto);
+  }
+
+  @Post('assign')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'POST /api/workload/assign — assign by JSON body (same as POST :id/assign)',
+  })
+  assignBySpec(
+    @Body() dto: AssignWorkloadBySpecDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.workload.assign(
+      dto.workloadItemId,
+      { teacherId: dto.teacherId },
+      user.id,
+    );
   }
 
   @Get(':id')

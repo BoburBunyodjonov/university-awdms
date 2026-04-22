@@ -39,6 +39,7 @@ export function useDirections(query: DirectionsQuery = {}) {
       );
       return data;
     },
+    staleTime: 600_000,
   });
 }
 

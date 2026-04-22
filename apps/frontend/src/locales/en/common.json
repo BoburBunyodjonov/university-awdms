@@ -13,6 +13,7 @@
     "monitoring": "Monitoring",
     "statistics": "Statistics",
     "reports": "Reports",
+    "profile": "Profile",
     "logout": "Logout"
   },
   "auth": {
@@ -38,13 +39,20 @@
     "practice": "Practice",
     "lab": "Lab",
     "control": "Assessment",
+    "individual_project": "Individual project",
     "course_project": "Course project",
     "internship": "Internship",
     "prediploma": "Pre-diploma",
-    "VQR": "VQR",
+    "VQR": "VQR (legacy)",
+    "VQR_full_time": "VQR (full-time / day)",
+    "VQR_part_time": "VQR (part-time / external)",
     "MD": "MD",
     "NDP": "NDP",
-    "NS": "NS"
+    "NS": "NS",
+    "phd_supervision_fulltime": "PhD supervision (full-time)",
+    "phd_supervision_parttime": "PhD supervision (part-time)",
+    "scientific_pedagogical": "Scientific-pedagogical (PhD)",
+    "scientific_internship": "Scientific internship (PhD)"
   },
   "calculationMode": {
     "coefficient_based": "Coefficient-based",
@@ -60,7 +68,8 @@
     "unassigned": "Assignment cleared",
     "generated": "Generated {{created}} new items · skipped {{skipped}}",
     "stream_created": "Stream created",
-    "stream_updated": "Stream updated"
+    "stream_updated": "Stream updated",
+    "subjects_created_batch": "Created “{{name}}” for {{count}} directions"
   },
   "common": {
     "loading": "Loading…",
@@ -75,7 +84,34 @@
     "edit": "Edit",
     "delete": "Delete",
     "actions": "Actions",
-    "page_of": "Page {{page}} of {{total}}"
+    "page_of": "Page {{page}} of {{total}}",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "teacher_profile": {
+    "subtitle": "Your profile, planned teaching load, and hours vs annual norm (filters apply to the table and the summary cards).",
+    "card_title": "Teacher record",
+    "workload_section": "Workload",
+    "filter_type": "Workload type",
+    "all_categories": "All categories",
+    "assign_workload": "Assign workload",
+    "assign_modal_title": "How assignments work",
+    "assign_modal_body": "New workload and changes to your teaching assignments are made by the department or programme office. If something looks wrong, contact the administrator to update your record.",
+    "assign_modal_dismiss": "OK",
+    "kpi": {
+      "total_hours": "Total hours",
+      "auditorium": "Auditorium hours",
+      "non_auditorium": "Non-auditorium hours",
+      "remaining_norm": "Remaining norm",
+      "hours_left": "{{hours}} h left",
+      "over_norm": "{{hours}} h over norm"
+    },
+    "fields": {
+      "degree_enum": "Degree (PhD / NoDegree)"
+    },
+    "workload_items_count": "Assigned workload items",
+    "json_hint": "Preview of the module JSON shape (full rows: my workload list).",
+    "open_workload": "My workload (compact view)"
   },
   "teachers": {
     "add": "Add teacher",
@@ -86,7 +122,21 @@
     "status_active": "Active",
     "status_inactive": "Inactive",
     "confirm_delete": "Remove {{name}}? They will be deactivated if they have existing workload.",
+    "back_to_list": "Back to teachers",
+    "admin_profile_hint": "Administrator view: workload, filters, and Excel export for this teacher.",
+    "list": {
+      "col_name": "Name",
+      "col_degree": "Degree",
+      "col_total_hours": "Total hours",
+      "col_remaining_norm": "Remaining norm",
+      "degree_phd": "PhD",
+      "degree_no": "No degree",
+      "over_norm": "+{{hours}}h over",
+      "assign_workload": "Assign workload"
+    },
     "fields": {
+      "auditoriumHoursCol": "Auditorium (h)",
+      "nonAuditoriumHoursCol": "Non-auditorium (h)",
       "fullName": "Full name",
       "position": "Position",
       "degreeName": "Academic degree",
@@ -141,11 +191,15 @@
     "edit_title": "Edit subject",
     "total_suffix": "subjects",
     "confirm_delete": "Delete subject {{name}}? This fails if any offerings reference it.",
+    "no_directions_for_level": "No directions for this level. Add directions first.",
+    "multi_select_placeholder": "Choose one or more directions…",
     "fields": {
       "name": "Subject name",
       "code": "Code",
       "code_hint": "Optional short reference, e.g. CS101",
       "direction": "Direction",
+      "directions_multi": "Directions",
+      "directions_multi_hint": "One catalog row per selected direction. Pick at least one.",
       "level": "Level",
       "offerings": "Offerings",
       "isActive": "Active"
@@ -213,8 +267,30 @@
     "kpi": {
       "items": "Items",
       "totalHours": "Total hours",
+      "totalDepartmentHours": "Total department hours",
+      "assignedHours": "Assigned hours",
+      "remainingNormHours": "Remaining norm (dept.)",
+      "deptNormHint": "Dept. hour budget: {{hours}} h (sum of active teacher norms)",
+      "teacherCount": "Teachers (active)",
+      "unassignedCount": "Unassigned workload",
+      "unassignedHoursSub": "{{hours}} h not yet assigned to a teacher",
       "assigned": "Assigned",
       "unassigned": "Unassigned"
+    },
+    "kpiExtra": "Workload items: {{items}} · Invalid: {{invalid}}",
+    "assignmentAction": {
+      "assign": "Assign",
+      "reassign": "Reassign",
+      "unassign": "Unassign"
+    },
+    "recentAssignments": {
+      "title": "Recent assignments",
+      "when": "When",
+      "action": "Action",
+      "workload": "Workload",
+      "hours": "Hours",
+      "changes": "From → to",
+      "by": "By"
     },
     "category": { "title": "Hours by category" },
     "byType": { "title": "Hours by workload type" },
@@ -234,6 +310,12 @@
     "annual": "Annual total",
     "fall": "Fall semester",
     "spring": "Spring semester",
+    "auditorium_kpi": "Auditorium hours",
+    "non_auditorium_kpi": "Non-auditorium hours",
+    "all_terms": "All terms",
+    "all_types": "All types",
+    "filter_semester": "Term",
+    "filter_type": "Type",
     "category_split": "In-class / out-of-class",
     "category_hint": "Hours split by type",
     "norm_hint": "of {{norm}}h norm ({{pct}}%)",
@@ -244,6 +326,8 @@
   "workload": {
     "total_suffix": "items",
     "all_years": "All years",
+    "all_teachers": "All teachers",
+    "teachers_filter_401": "Teacher list failed: unauthorized (401). Sign in again as admin, or set VITE_API_BASE_URL to the same API you use to log in.",
     "all_types": "All types",
     "no_teacher": "— not assigned —",
     "assign_action": "Assign",
@@ -252,7 +336,16 @@
     "planned": "planned",
     "requires_degree": "Degree required",
     "stream_of": "Stream of",
+    "stream_badge": "Lecture stream",
+    "stream_students": "students",
     "group": "Group",
+    "fallbacks": {
+      "no_offering_detail": "Academic year {{year}} only — no subject link on this row"
+    },
+    "category": {
+      "auditorium": "In-class",
+      "non_auditorium": "Out-of-class"
+    },
     "confirm_delete": "Delete this workload item? Assignment history will be lost.",
     "kpi": {
       "total": "Items",
@@ -263,6 +356,9 @@
     "fields": {
       "subject": "Subject",
       "type": "Type",
+      "group_or_stream": "Group / stream",
+      "coefficient": "Coefficient",
+      "category_col": "Category",
       "scope": "Scope",
       "students": "Students",
       "hours": "Hours",

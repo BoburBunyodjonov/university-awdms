@@ -50,13 +50,32 @@ export class ExportsController {
   @ApiOperation({ summary: "A single teacher's individual workload report" })
   async teacher(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Query('academicYearId') academicYearId: string,
+    @Query('academicYearId') academicYearId: string | undefined,
     @Res() res: Response,
   ) {
-    if (!academicYearId) {
-      throw new BadRequestException('academicYearId is required');
-    }
-    const buffer = await this.exports.teacherWorkbook(id, academicYearId);
+    const yearId = await this.exports.resolveAcademicYearId(academicYearId);
+    const buffer = await this.exports.teacherWorkbook(id, yearId);
+    res.set({
+      'Content-Type': XLSX_MIME,
+      'Content-Disposition': `attachment; filename="awdms-teacher-${id.slice(0, 8)}.xlsx"`,
+      'Content-Length': buffer.length.toString(),
+    });
+    res.send(buffer);
+  }
+
+  /** Module spec: GET /api/export/teacher/:id (same file as /excel) */
+  @Get('teacher/:id')
+  @Roles('admin')
+  @ApiOperation({
+    summary: 'GET /api/export/teacher/:id — Excel export (year defaults to active)',
+  })
+  async teacherModuleAlias(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('academicYearId') academicYearId: string | undefined,
+    @Res() res: Response,
+  ) {
+    const yearId = await this.exports.resolveAcademicYearId(academicYearId);
+    const buffer = await this.exports.teacherWorkbook(id, yearId);
     res.set({
       'Content-Type': XLSX_MIME,
       'Content-Disposition': `attachment; filename="awdms-teacher-${id.slice(0, 8)}.xlsx"`,

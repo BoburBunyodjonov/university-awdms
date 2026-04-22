@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -10,14 +11,16 @@ import {
   UserPlus,
   UserX,
 } from 'lucide-react';
+import { isAxiosError } from 'axios';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
-import type { AssignmentStatus, WorkloadType } from '@awdms/shared';
+import type { AcademicTerm, AssignmentStatus, WorkloadType } from '@awdms/shared';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { DataTable, Td, Th } from '@/components/ui/table';
 import { StatusBadge } from '@/components/ui/badge';
 import { useAcademicYears } from '@/features/academic-years/api';
+import { useTeachers } from '@/features/teachers/api';
 import {
   useDeleteWorkload,
   useUnassignWorkload,
@@ -27,6 +30,7 @@ import {
 } from '@/features/workload/api';
 import { AssignTeacherModal } from '@/features/workload/AssignTeacherModal';
 import { GenerateWorkloadModal } from '@/features/workload/GenerateWorkloadModal';
+import { LIST_PAGE_SIZE_MAX } from '@/lib/pagination';
 import { cn } from '@/lib/utils';
 
 const WORKLOAD_TYPES = [
@@ -34,20 +38,48 @@ const WORKLOAD_TYPES = [
   'practice',
   'lab',
   'control',
+  'individual_project',
   'course_project',
   'internship',
   'prediploma',
   'VQR',
+  'VQR_full_time',
+  'VQR_part_time',
   'MD',
   'NDP',
   'NS',
+  'phd_supervision_fulltime',
+  'phd_supervision_parttime',
+  'scientific_pedagogical',
+  'scientific_internship',
 ] as const;
 
 export function WorkloadPage() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
   const { data: years } = useAcademicYears();
+  const {
+    data: teachersList,
+    isError: teachersListError,
+    error: teachersListErrorObject,
+  } = useTeachers({
+    page: 1,
+    pageSize: LIST_PAGE_SIZE_MAX,
+  });
 
   const [query, setQuery] = useState<WorkloadQuery>({ page: 1, pageSize: 50 });
+
+  // Deep link from Teachers list: /admin/workload?assignedTeacherId=…
+  const teacherIdFromUrl = searchParams.get('assignedTeacherId');
+  useEffect(() => {
+    if (!teacherIdFromUrl) return;
+    setQuery((q) =>
+      q.assignedTeacherId === teacherIdFromUrl
+        ? q
+        : { ...q, page: 1, assignedTeacherId: teacherIdFromUrl },
+    );
+  }, [teacherIdFromUrl]);
+
   const activeYearId = useMemo(
     () =>
       years?.find((y) => y.isActive)?.id ?? years?.[0]?.id ?? undefined,
@@ -68,6 +100,35 @@ export function WorkloadPage() {
   const [assignTarget, setAssignTarget] =
     useState<WorkloadItemWithRelations | null>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
+
+  const teacherFilterOptions = useMemo(() => {
+    const fromApi = teachersList?.items ?? [];
+    const byId = new Map(
+      fromApi.map((tc) => [
+        tc.id,
+        { value: tc.id, label: tc.fullName, description: tc.position },
+      ]),
+    );
+    for (const row of data?.items ?? []) {
+      const at = row.assignedTeacher;
+      if (at && !byId.has(at.id)) {
+        byId.set(at.id, {
+          value: at.id,
+          label: at.fullName,
+          description: at.position,
+        });
+      }
+    }
+    return [...byId.values()];
+  }, [teachersList, data?.items]);
+
+  const teachersSelectTitle =
+    teachersListError && teachersListErrorObject
+      ? isAxiosError(teachersListErrorObject) &&
+        teachersListErrorObject.response?.status === 401
+        ? t('workload.teachers_filter_401')
+        : getErrorMessage(teachersListErrorObject)
+      : undefined;
 
   const totals = useMemo(() => {
     const items = data?.items ?? [];
@@ -172,6 +233,39 @@ export function WorkloadPage() {
                 })) ?? []
               }
             />
+            <Select
+              className="w-40"
+              value={query.academicTerm ?? 'all'}
+              onValueChange={(v) => {
+                const val = v === 'all' ? undefined : (v as AcademicTerm);
+                setQuery((q) => ({ ...q, page: 1, academicTerm: val }));
+              }}
+              options={[
+                { value: 'all', label: t('my_workload.all_terms') },
+                { value: 'fall', label: t('academicTerm.fall') },
+                { value: 'spring', label: t('academicTerm.spring') },
+              ]}
+            />
+            <div
+              className="w-52 min-w-[12rem] shrink-0"
+              title={teachersSelectTitle}
+            >
+              <Select
+                className="w-full"
+                value={query.assignedTeacherId}
+                onValueChange={(v) =>
+                  setQuery((q) => ({
+                    ...q,
+                    page: 1,
+                    assignedTeacherId: v,
+                  }))
+                }
+                placeholder={t('workload.all_teachers')}
+                clearable
+                aria-invalid={teachersListError ? true : undefined}
+                options={teacherFilterOptions}
+              />
+            </div>
             <Select
               className="w-40"
               value={query.workloadType}

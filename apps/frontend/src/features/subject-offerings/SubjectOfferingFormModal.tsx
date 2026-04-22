@@ -18,6 +18,7 @@ import {
   useUpdateSubjectOffering,
   type OfferingWithRelations,
 } from './api';
+import { LIST_PAGE_SIZE_MAX } from '@/lib/pagination';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -42,8 +43,10 @@ export function SubjectOfferingFormModal({ open, onClose, offering }: Props) {
   const createMut = useCreateSubjectOffering();
   const updateMut = useUpdateSubjectOffering(offering?.id ?? '');
 
-  // Fetch up to 100 subjects — adequate for a department catalog.
-  const { data: subjectsList } = useSubjects({ pageSize: 100 });
+  const { data: subjectsList } = useSubjects({
+    page: 1,
+    pageSize: LIST_PAGE_SIZE_MAX,
+  });
 
   const {
     register,
@@ -67,13 +70,13 @@ export function SubjectOfferingFormModal({ open, onClose, offering }: Props) {
 
   // Only groups matching the subject's direction + level may be linked.
   const { data: candidateGroups } = useGroups(
-    selectedSubject
-      ? {
-          pageSize: 100,
-          directionId: selectedSubject.directionId,
-          level: selectedSubject.level,
-        }
-      : { pageSize: 0 },
+    {
+      page: 1,
+      pageSize: LIST_PAGE_SIZE_MAX,
+      directionId: selectedSubject?.directionId,
+      level: selectedSubject?.level,
+    },
+    { enabled: Boolean(selectedSubject) },
   );
 
   useEffect(() => {

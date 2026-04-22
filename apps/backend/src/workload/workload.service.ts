@@ -1,16 +1,19 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import type { FormulaConfig, Prisma } from '@prisma/client';
 import {
   categoryOf,
+  isIndivisibleAuditoriumWorkload,
   requiresScientificDegree,
   type FormulaScope,
   type WorkloadType,
 } from '@awdms/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { AppCacheService } from '../common/app-cache.service';
 import { evaluateFormula } from './formula-engine';
 import type {
   AssignWorkloadDto,
@@ -21,6 +24,16 @@ import type {
   UpdateWorkloadItemDto,
   WorkloadQueryDto,
 } from './dto/workload-item.dto';
+
+const PHD_CAPPED_TYPES: WorkloadType[] = [
+  'MD',
+  'NDP',
+  'NS',
+  'phd_supervision_fulltime',
+  'phd_supervision_parttime',
+  'scientific_pedagogical',
+  'scientific_internship',
+];
 
 const include = {
   academicYear: { select: { id: true, name: true, isActive: true } },
@@ -63,13 +76,21 @@ const include = {
       name: true,
       calculationMode: true,
       scopeType: true,
+      baseHours: true,
+      coefficientPerStudent: true,
+      fixedHoursPerStudent: true,
+      fixedHoursPerGroup: true,
+      fixedValue: true,
     },
   },
 } satisfies Prisma.WorkloadItemInclude;
 
 @Injectable()
 export class WorkloadService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: AppCacheService,
+  ) {}
 
   async list(q: WorkloadQueryDto) {
     const where: Prisma.WorkloadItemWhereInput = {
@@ -83,32 +104,38 @@ export class WorkloadService {
         ? { assignedTeacherId: q.assignedTeacherId }
         : {}),
       ...(q.workloadType ? { workloadType: q.workloadType } : {}),
+      ...(q.academicTerm
+        ? { subjectOffering: { is: { academicTerm: q.academicTerm } } }
+        : {}),
       ...(q.category ? { category: q.category } : {}),
       ...(q.status ? { status: q.status } : {}),
       ...(q.unassignedOnly ? { assignedTeacherId: null } : {}),
     };
 
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.workloadItem.findMany({
-        where,
-        include,
-        orderBy: [
-          { status: 'asc' },
-          { workloadType: 'asc' },
-          { createdAt: 'desc' },
-        ],
-        skip: (q.page - 1) * q.pageSize,
-        take: q.pageSize,
-      }),
-      this.prisma.workloadItem.count({ where }),
-    ]);
-    return {
-      items,
-      total,
-      page: q.page,
-      pageSize: q.pageSize,
-      totalPages: Math.max(1, Math.ceil(total / q.pageSize)),
-    };
+    const key = `workload:list:${JSON.stringify(where)}:p${q.page}:s${q.pageSize}`;
+    return this.cache.wrap(key, 60_000, async () => {
+      const [items, total] = await this.prisma.$transaction([
+        this.prisma.workloadItem.findMany({
+          where,
+          include,
+          orderBy: [
+            { status: 'asc' },
+            { workloadType: 'asc' },
+            { createdAt: 'desc' },
+          ],
+          skip: (q.page - 1) * q.pageSize,
+          take: q.pageSize,
+        }),
+        this.prisma.workloadItem.count({ where }),
+      ]);
+      return {
+        items,
+        total,
+        page: q.page,
+        pageSize: q.pageSize,
+        totalPages: Math.max(1, Math.ceil(total / q.pageSize)),
+      };
+    });
   }
 
   async findOne(id: string) {
@@ -121,16 +148,24 @@ export class WorkloadService {
   }
 
   async create(dto: CreateWorkloadItemDto) {
+    if (dto.workloadType === 'VQR') {
+      throw new BadRequestException(
+        'Legacy workload type "VQR" is not allowed. Use VQR_full_time (day) or VQR_part_time (external).',
+      );
+    }
     const context = await this.resolveContext(dto);
+    this.assertStudentCap(dto.workloadType as WorkloadType, context.studentCount);
+    await this.assertNoDuplicateWorkloadItem(dto);
     const plannedHours = await this.computePlannedHours({
       workloadType: dto.workloadType,
       studentCount: context.studentCount,
+      groupCount: context.groupCount,
       level: context.level,
       studyType: context.studyType,
       formulaConfigId: dto.formulaConfigId ?? null,
     });
 
-    return this.prisma.workloadItem.create({
+    const created = await this.prisma.workloadItem.create({
       data: {
         academicYearId: dto.academicYearId,
         subjectOfferingId: dto.subjectOfferingId ?? null,
@@ -144,15 +179,21 @@ export class WorkloadService {
         requiresDegree: requiresScientificDegree(
           dto.workloadType as WorkloadType,
         ),
+        maxStudentsAllowed: this.maxStudentsAllowed(
+          dto.workloadType as WorkloadType,
+        ),
         status: 'unassigned',
       },
       include,
     });
+    this.invalidateDerivedCaches();
+    return created;
   }
 
   async update(id: string, dto: UpdateWorkloadItemDto) {
     const current = await this.findOne(id);
     const newStudents = dto.studentCount ?? current.studentCount;
+    this.assertStudentCap(current.workloadType as WorkloadType, newStudents);
     const newFormulaId =
       dto.formulaConfigId !== undefined
         ? dto.formulaConfigId
@@ -166,9 +207,11 @@ export class WorkloadService {
         current.subjectOffering?.subject.level ?? 'bachelor';
       const studyType =
         current.subjectOffering?.studyType ?? 'full_time';
+      const groupCount = await this.getGroupCountForItem(current);
       const result = await this.computePlannedHours({
         workloadType: current.workloadType as WorkloadType,
         studentCount: newStudents,
+        groupCount,
         level,
         studyType,
         formulaConfigId: newFormulaId,
@@ -176,25 +219,31 @@ export class WorkloadService {
       plannedHours = result.hours;
     }
 
-    return this.prisma.workloadItem.update({
+    const cap = this.maxStudentsAllowed(current.workloadType as WorkloadType);
+    const updated = await this.prisma.workloadItem.update({
       where: { id },
       data: {
         studentCount: dto.studentCount,
         plannedHours,
         formulaConfigId: dto.formulaConfigId,
         requiresDegree: dto.requiresDegree,
+        maxStudentsAllowed: cap,
         status: dto.status,
       },
       include,
     });
+    this.invalidateDerivedCaches();
+    return updated;
   }
 
   async remove(id: string) {
     const item = await this.findOne(id);
-    return this.prisma.$transaction(async (tx) => {
+    const deleted = await this.prisma.$transaction(async (tx) => {
       await tx.assignmentLog.deleteMany({ where: { workloadItemId: id } });
       return tx.workloadItem.delete({ where: { id: item.id } });
     });
+    this.invalidateDerivedCaches();
+    return deleted;
   }
 
   /**
@@ -265,9 +314,11 @@ export class WorkloadService {
             skipped.push(existing.id);
             continue;
           }
+          const streamGroupCount = Math.max(1, stream.groupLinks.length);
           const planned = await this.computePlannedHours({
             workloadType: wtype,
             studentCount: stream.totalStudentCount,
+            groupCount: streamGroupCount,
             level,
             studyType,
             formulaConfigId: null,
@@ -283,6 +334,7 @@ export class WorkloadService {
               plannedHours: planned.hours,
               formulaConfigId: planned.formulaId,
               requiresDegree: requiresScientificDegree(wtype),
+              maxStudentsAllowed: this.maxStudentsAllowed(wtype),
               status: 'unassigned',
             },
             select: { id: true },
@@ -318,6 +370,7 @@ export class WorkloadService {
         const planned = await this.computePlannedHours({
           workloadType: 'practice',
           studentCount: gl.group.studentCount,
+          groupCount: 1,
           level,
           studyType,
           formulaConfigId: null,
@@ -334,6 +387,7 @@ export class WorkloadService {
             plannedHours: planned.hours,
             formulaConfigId: planned.formulaId,
             requiresDegree: requiresScientificDegree('practice'),
+            maxStudentsAllowed: this.maxStudentsAllowed('practice'),
             status: 'unassigned',
           },
           select: { id: true },
@@ -342,11 +396,13 @@ export class WorkloadService {
       }
     }
 
-    return {
+    const result = {
       createdCount: createdItems.length,
       skippedCount: skipped.length,
       createdIds: createdItems,
     };
+    if (createdItems.length > 0) this.invalidateDerivedCaches();
+    return result;
   }
 
   /**
@@ -379,9 +435,14 @@ export class WorkloadService {
         `Rule 13: "${item.workloadType}" items require a teacher with a scientific degree — ${teacher.fullName} does not have one.`,
       );
     }
+    this.assertStudentCap(
+      item.workloadType as WorkloadType,
+      item.studentCount,
+      teacher.fullName,
+    );
 
     const oldTeacherId = item.assignedTeacherId;
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.workloadItem.update({
         where: { id },
         data: { assignedTeacherId: teacher.id, status: 'assigned' },
@@ -398,6 +459,8 @@ export class WorkloadService {
       });
       return updated;
     });
+    this.invalidateDerivedCaches();
+    return updated;
   }
 
   async reassign(
@@ -420,7 +483,7 @@ export class WorkloadService {
     const item = await this.findOne(id);
     if (!item.assignedTeacherId) return item;
 
-    return this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.workloadItem.update({
         where: { id },
         data: { assignedTeacherId: null, status: 'unassigned' },
@@ -437,6 +500,8 @@ export class WorkloadService {
       });
       return updated;
     });
+    this.invalidateDerivedCaches();
+    return updated;
   }
 
   /**
@@ -473,7 +538,11 @@ export class WorkloadService {
       items.filter(predicate).reduce((n, i) => n + i.plannedHours, 0);
 
     return {
-      teacher,
+      teacher: {
+        ...teacher,
+        degree: teacher.hasScientificDegree ? 'PhD' : 'NoDegree',
+      },
+      assignedWorkloads: items,
       totals: {
         totalHours: sumHours(() => true),
         auditoriumHours: sumHours((i) => i.category === 'auditorium'),
@@ -490,6 +559,66 @@ export class WorkloadService {
 
   // ─── helpers ───────────────────────────────────────────────────────────
 
+  private async assertNoDuplicateWorkloadItem(dto: CreateWorkloadItemDto) {
+    if (dto.groupId && dto.subjectOfferingId) {
+      const exists = await this.prisma.workloadItem.findFirst({
+        where: {
+          academicYearId: dto.academicYearId,
+          subjectOfferingId: dto.subjectOfferingId,
+          groupId: dto.groupId,
+          workloadType: dto.workloadType,
+        },
+        select: { id: true },
+      });
+      if (exists) {
+        throw new ConflictException(
+          isIndivisibleAuditoriumWorkload(dto.workloadType as WorkloadType)
+            ? 'Indivisible workload: a row for this academic year, subject offering, group, and type already exists. Lecture and practice cannot be split across duplicate rows.'
+            : 'Group cannot be duplicated: a workload row for this year, subject offering, group, and type already exists.',
+        );
+      }
+    }
+    if (dto.lectureStreamId) {
+      const exists = await this.prisma.workloadItem.findFirst({
+        where: {
+          academicYearId: dto.academicYearId,
+          lectureStreamId: dto.lectureStreamId,
+          workloadType: dto.workloadType,
+          groupId: null,
+        },
+        select: { id: true },
+      });
+      if (exists) {
+        throw new ConflictException(
+          isIndivisibleAuditoriumWorkload(dto.workloadType as WorkloadType)
+            ? 'Indivisible workload: this lecture stream already has a workload item of this type for the academic year. Lecture and practice cannot be split across duplicate stream rows.'
+            : 'This lecture stream already has a workload item of this type for the academic year.',
+        );
+      }
+    }
+  }
+
+  private async getGroupCountForItem(item: {
+    lectureStreamId: string | null;
+    groupId: string | null;
+    subjectOfferingId: string | null;
+  }): Promise<number> {
+    if (item.groupId) return 1;
+    if (item.lectureStreamId) {
+      const c = await this.prisma.streamGroup.count({
+        where: { streamId: item.lectureStreamId },
+      });
+      return Math.max(1, c);
+    }
+    if (item.subjectOfferingId) {
+      const c = await this.prisma.subjectOfferingGroup.count({
+        where: { subjectOfferingId: item.subjectOfferingId },
+      });
+      return Math.max(1, c);
+    }
+    return 1;
+  }
+
   private async resolveContext(dto: CreateWorkloadItemDto) {
     const year = await this.prisma.academicYear.findUnique({
       where: { id: dto.academicYearId },
@@ -504,12 +633,14 @@ export class WorkloadService {
     let level: 'bachelor' | 'master' = 'bachelor';
     let studyType: 'full_time' | 'part_time' = 'full_time';
     let studentCount = dto.studentCount ?? 0;
+    let groupCount = 1;
 
     if (dto.lectureStreamId) {
       const stream = await this.prisma.lectureStream.findUnique({
         where: { id: dto.lectureStreamId },
         select: {
           totalStudentCount: true,
+          _count: { select: { groupLinks: true } },
           subjectOffering: {
             select: {
               studyType: true,
@@ -525,6 +656,7 @@ export class WorkloadService {
       }
       level = stream.subjectOffering.subject.level;
       studyType = stream.subjectOffering.studyType;
+      groupCount = Math.max(1, stream._count.groupLinks);
       if (!studentCount) studentCount = stream.totalStudentCount;
     } else if (dto.groupId) {
       const group = await this.prisma.group.findUnique({
@@ -534,6 +666,7 @@ export class WorkloadService {
       if (!group) throw new BadRequestException(`Group ${dto.groupId} not found`);
       level = group.level;
       studyType = group.studyType;
+      groupCount = 1;
       if (!studentCount) studentCount = group.studentCount;
     } else if (dto.subjectOfferingId) {
       const off = await this.prisma.subjectOffering.findUnique({
@@ -550,9 +683,13 @@ export class WorkloadService {
       }
       level = off.subject.level;
       studyType = off.studyType;
+      const g = await this.prisma.subjectOfferingGroup.count({
+        where: { subjectOfferingId: dto.subjectOfferingId },
+      });
+      groupCount = Math.max(1, g);
     }
 
-    return { studentCount, level, studyType };
+    return { studentCount, level, studyType, groupCount };
   }
 
   /**
@@ -561,6 +698,7 @@ export class WorkloadService {
   private async computePlannedHours(params: {
     workloadType: WorkloadType;
     studentCount: number;
+    groupCount: number;
     level: 'bachelor' | 'master';
     studyType: 'full_time' | 'part_time';
     formulaConfigId: string | null;
@@ -581,7 +719,11 @@ export class WorkloadService {
     if (!formula) {
       return { hours: 0, formulaId: null as string | null };
     }
-    const hours = evaluateFormula(formula, params.studentCount, 1);
+    const hours = evaluateFormula(
+      formula,
+      params.studentCount,
+      params.groupCount,
+    );
     return { hours, formulaId: formula.id };
   }
 
@@ -596,11 +738,20 @@ export class WorkloadService {
       practice: 'practice',
       lab: 'lab',
       control: 'control',
+      individual_project: 'individual_project',
       course_project: 'course_project',
-      VQR: 'VQR',
+      internship: 'internship',
+      prediploma: 'prediploma',
+      VQR: 'VQR_full_time',
+      VQR_full_time: 'VQR_full_time',
+      VQR_part_time: 'VQR_part_time',
       MD: 'MD',
       NDP: 'NDP',
       NS: 'NS',
+      phd_supervision_fulltime: 'phd_supervision_fulltime',
+      phd_supervision_parttime: 'phd_supervision_parttime',
+      scientific_pedagogical: 'scientific_pedagogical',
+      scientific_internship: 'scientific_internship',
     };
     const scope = scopeMap[workloadType];
     if (!scope) return null;
@@ -613,5 +764,29 @@ export class WorkloadService {
       },
       orderBy: { effectiveFrom: 'desc' },
     });
+  }
+
+  private maxStudentsAllowed(workloadType: WorkloadType): number | null {
+    return PHD_CAPPED_TYPES.includes(workloadType) ? 3 : null;
+  }
+
+  private assertStudentCap(
+    workloadType: WorkloadType,
+    studentCount: number,
+    teacherName?: string,
+  ) {
+    const cap = this.maxStudentsAllowed(workloadType);
+    if (!cap || studentCount <= cap) return;
+    const teacherLabel = teacherName ? ` for "${teacherName}"` : '';
+    throw new BadRequestException(
+      `"${workloadType}" allows at most ${cap} students${teacherLabel}.`,
+    );
+  }
+
+  private invalidateDerivedCaches() {
+    this.cache.invalidatePrefixes([
+      'workload:list:',
+      'monitoring:',
+    ]);
   }
 }

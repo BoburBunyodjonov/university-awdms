@@ -16,13 +16,20 @@ export type WorkloadType =
   | 'practice'
   | 'lab'
   | 'control'
+  | 'individual_project'
   | 'course_project'
   | 'internship'
   | 'prediploma'
-  | 'VQR'
+  | 'VQR' // legacy; new rows use VQR_full_time / VQR_part_time
+  | 'VQR_full_time'
+  | 'VQR_part_time'
   | 'MD'
   | 'NDP'
-  | 'NS';
+  | 'NS'
+  | 'phd_supervision_fulltime'
+  | 'phd_supervision_parttime'
+  | 'scientific_pedagogical'
+  | 'scientific_internship';
 
 export type WorkloadCategory = 'auditorium' | 'non_auditorium';
 
@@ -41,11 +48,20 @@ export type FormulaScope =
   | 'control'
   | 'practice'
   | 'lab'
+  | 'individual_project'
   | 'course_project'
-  | 'VQR'
+  | 'internship'
+  | 'prediploma'
+  | 'VQR' // legacy
+  | 'VQR_full_time'
+  | 'VQR_part_time'
   | 'MD'
   | 'NDP'
-  | 'NS';
+  | 'NS'
+  | 'phd_supervision_fulltime'
+  | 'phd_supervision_parttime'
+  | 'scientific_pedagogical'
+  | 'scientific_internship';
 
 export type AssignmentAction = 'assign' | 'reassign' | 'unassign';
 

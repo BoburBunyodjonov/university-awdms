@@ -7,6 +7,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type {
+  AcademicTerm,
   AssignmentStatus,
   GenerateWorkloadInput,
   Language,
@@ -28,6 +29,8 @@ export interface WorkloadQuery {
   lectureStreamId?: string;
   groupId?: string;
   assignedTeacherId?: string;
+  /** Fall/spring — `subject_offering` bo‘yicha */
+  academicTerm?: AcademicTerm;
   workloadType?: WorkloadType;
   category?: WorkloadCategory;
   status?: AssignmentStatus;
@@ -74,12 +77,24 @@ export interface WorkloadItemWithRelations extends WorkloadItem {
     name: string;
     calculationMode: string;
     scopeType: string;
+    baseHours: number;
+    coefficientPerStudent: number;
+    fixedHoursPerStudent: number;
+    fixedHoursPerGroup: number;
+    fixedValue: number;
   } | null;
 }
 
 const key = (q: WorkloadQuery = {}) => ['workload', q] as const;
 
 export function useWorkloadItems(query: WorkloadQuery = {}) {
+  const hasFilters =
+    Boolean(query.academicYearId) ||
+    Boolean(query.subjectOfferingId) ||
+    Boolean(query.assignedTeacherId) ||
+    Boolean(query.academicTerm) ||
+    Boolean(query.workloadType) ||
+    Boolean(query.status);
   return useQuery<Paginated<WorkloadItemWithRelations>>({
     queryKey: key(query),
     queryFn: async () => {
@@ -90,6 +105,7 @@ export function useWorkloadItems(query: WorkloadQuery = {}) {
       return data;
     },
     placeholderData: keepPreviousData,
+    staleTime: hasFilters ? 60_000 : 30_000,
   });
 }
 

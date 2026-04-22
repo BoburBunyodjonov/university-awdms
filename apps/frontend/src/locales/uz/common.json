@@ -13,6 +13,7 @@
     "monitoring": "Monitoring",
     "statistics": "Statistika",
     "reports": "Hisobotlar",
+    "profile": "Profil",
     "logout": "Chiqish"
   },
   "auth": {
@@ -38,13 +39,20 @@
     "practice": "Amaliy",
     "lab": "Laboratoriya",
     "control": "Nazorat",
+    "individual_project": "Individual loyiha",
     "course_project": "Kurs ishi",
     "internship": "Amaliyot",
     "prediploma": "Bitiruv oldi amaliyot",
-    "VQR": "VQR",
+    "VQR": "VQR (eski)",
+    "VQR_full_time": "VQR (kunduzgi / to‘liq)",
+    "VQR_part_time": "VQR (sirtqi / qisman)",
     "MD": "MD",
     "NDP": "NDP",
-    "NS": "NS"
+    "NS": "NS",
+    "phd_supervision_fulltime": "PhD rahbarligi (kunduzgi)",
+    "phd_supervision_parttime": "PhD rahbarligi (sirtqi)",
+    "scientific_pedagogical": "Ilmiy-pedagogik (PhD)",
+    "scientific_internship": "Ilmiy staj (PhD)"
   },
   "calculationMode": {
     "coefficient_based": "Koeffitsientli",
@@ -60,7 +68,8 @@
     "unassigned": "Biriktirish olib tashlandi",
     "generated": "{{created}} ta yangi element yaratildi · {{skipped}} ta o'tkazib yuborildi",
     "stream_created": "Potok yaratildi",
-    "stream_updated": "Potok yangilandi"
+    "stream_updated": "Potok yangilandi",
+    "subjects_created_batch": "«{{name}}» {{count}} ta yo'nalish uchun yaratildi"
   },
   "common": {
     "loading": "Yuklanmoqda...",
@@ -75,7 +84,34 @@
     "edit": "Tahrirlash",
     "delete": "O'chirish",
     "actions": "Amallar",
-    "page_of": "{{total}} dan {{page}}-sahifa"
+    "page_of": "{{total}} dan {{page}}-sahifa",
+    "yes": "Ha",
+    "no": "Yo'q"
+  },
+  "teacher_profile": {
+    "subtitle": "Profilingiz, reja bo‘yicha yuklama va yillik normaga nisbatan soatlar (filtrlar jadval va yuqoridagi kartochkalarga qo‘llanadi).",
+    "card_title": "O'qituvchi kartochkasi",
+    "workload_section": "Yuklama",
+    "filter_type": "Yuklama turi",
+    "all_categories": "Barcha toifalar",
+    "assign_workload": "Yuklama biriktirish",
+    "assign_modal_title": "Biriktirish qanday amalga oshadi",
+    "assign_modal_body": "Yangi yuklama va o‘zgarishlar kafedra yoki dastur ofisi tomonidan amalga oshiriladi. Noto‘g‘ri bo‘lsa, ma’lumotlarni yangilash uchun administratormurojaat qiling.",
+    "assign_modal_dismiss": "Yaxshi",
+    "kpi": {
+      "total_hours": "Jami soat",
+      "auditorium": "Auditoriya soatlari",
+      "non_auditorium": "Auditoriyadan tashqari soatlar",
+      "remaining_norm": "Normadan qolgan",
+      "hours_left": "{{hours}} soat qoldi",
+      "over_norm": "Normadan {{hours}} soat oshib ketdi"
+    },
+    "fields": {
+      "degree_enum": "Daraja (PhD / NoDegree)"
+    },
+    "workload_items_count": "Biriktirilgan yuklama qatorlari",
+    "json_hint": "Modul JSON qismi (to'liq qatorlar — «Mening yuklamam»).",
+    "open_workload": "Mening yuklamam (ixcham ko‘rinish)"
   },
   "teachers": {
     "add": "O'qituvchi qo'shish",
@@ -86,7 +122,21 @@
     "status_active": "Faol",
     "status_inactive": "Faol emas",
     "confirm_delete": "{{name}} o'chirilsinmi? Yuklamasi bo'lsa, faqat faoliyatdan chiqariladi.",
+    "back_to_list": "O'qituvchilar ro'yxatiga",
+    "admin_profile_hint": "Administrator ko'rinishi: yuklama, filtrlar va Excel eksport.",
+    "list": {
+      "col_name": "Ism",
+      "col_degree": "Daraja",
+      "col_total_hours": "Jami soat",
+      "col_remaining_norm": "Normadan qolgan",
+      "degree_phd": "PhD",
+      "degree_no": "Darajasiz",
+      "over_norm": "normadan +{{hours}}h",
+      "assign_workload": "Yuklama biriktirish"
+    },
     "fields": {
+      "auditoriumHoursCol": "Auditoriya soati",
+      "nonAuditoriumHoursCol": "Auditoriya bo'lmagan soat",
       "fullName": "To'liq ismi",
       "position": "Lavozim",
       "degreeName": "Ilmiy darajasi",
@@ -141,11 +191,15 @@
     "edit_title": "Fanni tahrirlash",
     "total_suffix": "fan",
     "confirm_delete": "{{name}} fanini o'chirishmi? Unga bog'liq yuklamalar bo'lsa, amal bajarilmaydi.",
+    "no_directions_for_level": "Ushbu darajada yo'nalish yo'q. Avval yo'nalish qo'shing.",
+    "multi_select_placeholder": "Bir yoki bir nechta yo'nalishni tanlang…",
     "fields": {
       "name": "Fan nomi",
       "code": "Kod",
       "code_hint": "Ixtiyoriy qisqa kod, masalan CS101",
       "direction": "Yo'nalish",
+      "directions_multi": "Yo'nalishlar",
+      "directions_multi_hint": "Har tanlangan yo'nalish uchun alohida fan qatori. Kamida bittasini tanlang.",
       "level": "Daraja",
       "offerings": "Yuklamalar",
       "isActive": "Faol"
@@ -213,8 +267,30 @@
     "kpi": {
       "items": "Elementlar",
       "totalHours": "Jami soat",
+      "totalDepartmentHours": "Kafedra bo‘yicha jami soat",
+      "assignedHours": "Biriktirilgan soatlar",
+      "remainingNormHours": "Qolgan (norma, kafedra)",
+      "deptNormHint": "Kafedra soat byudjeti: {{hours}} h (faol o‘qituvchi normasining yig‘indisi)",
+      "teacherCount": "O‘qituvchilar (faol)",
+      "unassignedCount": "Biriktirilmagan yuklama",
+      "unassignedHoursSub": "o‘qituvchiga hali biriktirilmagan: {{hours}} h",
       "assigned": "Biriktirilgan",
       "unassigned": "Biriktirilmagan"
+    },
+    "kpiExtra": "Yuklama qatorlari: {{items}} · Xato: {{invalid}}",
+    "assignmentAction": {
+      "assign": "Biriktirish",
+      "reassign": "Qayta biriktirish",
+      "unassign": "Biriktirishni olib tashlash"
+    },
+    "recentAssignments": {
+      "title": "So‘nggi biriktirishlar",
+      "when": "Vaqt",
+      "action": "Harakat",
+      "workload": "Yuklama",
+      "hours": "Soat",
+      "changes": "Kimdan → kimga",
+      "by": "Kim tomonidan"
     },
     "category": { "title": "Kategoriya bo'yicha soatlar" },
     "byType": { "title": "Yuklama turi bo'yicha soatlar" },
@@ -234,6 +310,12 @@
     "annual": "Yillik jami",
     "fall": "Kuzgi semestr",
     "spring": "Bahorgi semestr",
+    "auditorium_kpi": "Auditoriya soatlari",
+    "non_auditorium_kpi": "Auditoriyadan tashqari soatlar",
+    "all_terms": "Barcha semestrlar",
+    "all_types": "Barcha turlar",
+    "filter_semester": "Semestr",
+    "filter_type": "Turi",
     "category_split": "Aud. / Aud.dan tashqari",
     "category_hint": "Soatlar kategoriya bo'yicha",
     "norm_hint": "{{norm}}h normadan ({{pct}}%)",
@@ -244,6 +326,8 @@
   "workload": {
     "total_suffix": "element",
     "all_years": "Barcha yillar",
+    "all_teachers": "Barcha o'qituvchilar",
+    "teachers_filter_401": "O'qituvchilar ro'yxati yuklanmadi: ruxsatsiz (401). Admin sifatida qayta kiring yoki VITE_API_BASE_URL login qilgan backend'ga mos ekanini tekshiring.",
     "all_types": "Barcha turlar",
     "no_teacher": "— biriktirilmagan —",
     "assign_action": "Biriktirish",
@@ -252,7 +336,16 @@
     "planned": "rejalashtirilgan",
     "requires_degree": "Ilmiy daraja talab qilinadi",
     "stream_of": "Potok:",
+    "stream_badge": "Ma'ruzalar oqimi",
+    "stream_students": "talaba",
     "group": "Guruh",
+    "fallbacks": {
+      "no_offering_detail": "Faqat {{year}} o‘quv yili (qatorda fan biriktirmasi yo‘q)"
+    },
+    "category": {
+      "auditorium": "Auditoriyada",
+      "non_auditorium": "Tashqarida"
+    },
     "confirm_delete": "Ushbu yuklama elementini o'chirishmi? Biriktirish tarixi o'chadi.",
     "kpi": {
       "total": "Elementlar",
@@ -263,6 +356,9 @@
     "fields": {
       "subject": "Fan",
       "type": "Turi",
+      "group_or_stream": "Guruh / oqim",
+      "coefficient": "Koeffitsient",
+      "category_col": "Toifa",
       "scope": "Qamrov",
       "students": "Talabalar",
       "hours": "Soat",

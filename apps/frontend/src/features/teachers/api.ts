@@ -13,6 +13,7 @@ import type {
 } from '@awdms/shared';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
+import type { MyWorkloadSummary } from '@/features/my-workload/api';
 
 export interface TeachersQuery {
   page?: number;
@@ -90,5 +91,28 @@ export function useDeleteTeacher() {
       toast.success(t('toasts.deleted', { name: t('nav.teachers') }));
     },
     onError: (err) => toast.error(getErrorMessage(err)),
+  });
+}
+
+/**
+ * Admin: GET /teachers/:id/workload — same shape as /my-workload, scoped by
+ * teacher id.
+ */
+export function useTeacherWorkload(
+  teacherId: string | undefined,
+  academicYearId?: string,
+) {
+  return useQuery<MyWorkloadSummary>({
+    queryKey: ['teacher-workload', teacherId ?? null, academicYearId ?? null],
+    queryFn: async () => {
+      const { data } = await api.get<MyWorkloadSummary>(
+        `/teachers/${teacherId}/workload`,
+        {
+          params: academicYearId ? { academicYearId } : undefined,
+        },
+      );
+      return data;
+    },
+    enabled: Boolean(teacherId),
   });
 }

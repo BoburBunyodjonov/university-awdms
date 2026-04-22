@@ -35,7 +35,10 @@ export interface GroupWithDirection extends Group {
 
 const key = (q: GroupsQuery = {}) => ['groups', q] as const;
 
-export function useGroups(query: GroupsQuery = {}) {
+export function useGroups(
+  query: GroupsQuery = {},
+  options: { enabled?: boolean } = {},
+) {
   return useQuery<Paginated<GroupWithDirection>>({
     queryKey: key(query),
     queryFn: async () => {
@@ -45,6 +48,7 @@ export function useGroups(query: GroupsQuery = {}) {
       return data;
     },
     placeholderData: keepPreviousData,
+    enabled: options.enabled ?? true,
   });
 }
 

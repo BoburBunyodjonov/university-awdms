@@ -1,18 +1,34 @@
 import { z } from 'zod';
 import { AcademicTermEnum, StudyLevelEnum, StudyTypeEnum } from './enums';
 
-// Subject catalog — a Subject belongs to a Direction.
+// Subject catalog — one row per (direction, name) unique. Create can batch several directions.
 export const CreateSubjectSchema = z.object({
   name: z.string().min(1).max(200),
   code: z.string().trim().max(50).nullable().optional(),
-  directionId: z.string().uuid(),
+  directionIds: z.array(z.string().uuid()).min(1).max(64),
   level: StudyLevelEnum,
   isActive: z.boolean().default(true),
 });
 export type CreateSubjectInput = z.infer<typeof CreateSubjectSchema>;
 
-export const UpdateSubjectSchema = CreateSubjectSchema.partial();
+export const UpdateSubjectSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  code: z.string().trim().max(50).nullable().optional(),
+  directionId: z.string().uuid().optional(),
+  level: StudyLevelEnum.optional(),
+  isActive: z.boolean().optional(),
+});
 export type UpdateSubjectInput = z.infer<typeof UpdateSubjectSchema>;
+
+/** Full form values for subject edit (admin modal). */
+export const EditSubjectFormSchema = z.object({
+  name: z.string().min(1).max(200),
+  code: z.string().trim().max(50).nullable().optional(),
+  directionId: z.string().uuid(),
+  level: StudyLevelEnum,
+  isActive: z.boolean(),
+});
+export type EditSubjectFormInput = z.infer<typeof EditSubjectFormSchema>;
 
 // Offering = one (subject, term, course, studyType, semester) combo + group links.
 export const CreateSubjectOfferingSchema = z.object({

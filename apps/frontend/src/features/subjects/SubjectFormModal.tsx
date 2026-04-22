@@ -4,7 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import {
   CreateSubjectSchema,
+  EditSubjectFormSchema,
   type CreateSubjectInput,
+  type EditSubjectFormInput,
   type Subject,
 } from '@awdms/shared';
 import { Dialog } from '@/components/ui/dialog';
@@ -12,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Field } from '@/components/ui/field';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { useDirections } from '@/features/directions/api';
 import { useCreateSubject, useUpdateSubject } from './api';
 
@@ -21,19 +24,40 @@ interface Props {
   subject?: Subject | null;
 }
 
-const DEFAULTS: CreateSubjectInput = {
+const CREATE_DEFAULTS: CreateSubjectInput = {
   name: '',
   code: '',
-  directionId: '',
+  directionIds: [],
   level: 'bachelor',
   isActive: true,
 };
 
 export function SubjectFormModal({ open, onClose, subject }: Props) {
+  if (!open) {
+    return null;
+  }
+  if (subject) {
+    return (
+      <SubjectEditDialog
+        key={subject.id}
+        open
+        onClose={onClose}
+        subject={subject}
+      />
+    );
+  }
+  return <SubjectCreateDialog open onClose={onClose} />;
+}
+
+function SubjectCreateDialog({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   const { t } = useTranslation();
-  const isEditing = Boolean(subject);
   const createMut = useCreateSubject();
-  const updateMut = useUpdateSubject(subject?.id ?? '');
   const { data: directionsList } = useDirections();
 
   const {
@@ -45,7 +69,167 @@ export function SubjectFormModal({ open, onClose, subject }: Props) {
     formState: { errors },
   } = useForm<CreateSubjectInput>({
     resolver: zodResolver(CreateSubjectSchema),
-    defaultValues: DEFAULTS,
+    defaultValues: CREATE_DEFAULTS,
+  });
+
+  const level = useWatch({ control, name: 'level' });
+  const directionsForLevel = useMemo(
+    () => directionsList?.items.filter((d) => d.level === level) ?? [],
+    [directionsList, level],
+  );
+
+  useEffect(() => {
+    setValue('directionIds', [], { shouldValidate: false });
+  }, [level, setValue]);
+
+  useEffect(() => {
+    if (open) {
+      reset(CREATE_DEFAULTS);
+    }
+  }, [open, reset]);
+
+  const onSubmit = async (values: CreateSubjectInput) => {
+    const payload = {
+      ...values,
+      code: values.code?.trim() || null,
+    };
+    try {
+      await createMut.mutateAsync(payload);
+      onClose();
+    } catch {
+      /* hook toasts the error; keep modal open */
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={t('subjects.add_title')}
+      className="max-w-2xl"
+      footer={
+        <>
+          <Button variant="secondary" type="button" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="submit"
+            form="subject-form-create"
+            loading={createMut.isPending}
+          >
+            {t('common.create')}
+          </Button>
+        </>
+      }
+    >
+      <form
+        id="subject-form-create"
+        className="space-y-3"
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+      >
+        <Field label={t('subjects.fields.name')} error={errors.name?.message}>
+          <Input autoFocus {...register('name')} />
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field
+            label={t('subjects.fields.code')}
+            error={errors.code?.message}
+            hint={t('subjects.fields.code_hint')}
+          >
+            <Input {...register('code')} />
+          </Field>
+          <Field
+            label={t('subjects.fields.level')}
+            error={errors.level?.message}
+          >
+            <Controller
+              name="level"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(v) => field.onChange(v)}
+                  onBlur={field.onBlur}
+                  options={[
+                    { value: 'bachelor', label: t('level.bachelor') },
+                    { value: 'master', label: t('level.master') },
+                  ]}
+                />
+              )}
+            />
+          </Field>
+        </div>
+
+        <Field
+          label={t('subjects.fields.directions_multi')}
+          error={errors.directionIds?.message as string | undefined}
+          hint={t('subjects.fields.directions_multi_hint')}
+        >
+          <Controller
+            name="directionIds"
+            control={control}
+            render={({ field }) => (
+              <MultiSelect
+                value={field.value}
+                onValueChange={field.onChange}
+                onBlur={field.onBlur}
+                placeholder={t('subjects.multi_select_placeholder')}
+                aria-label={t('subjects.fields.directions_multi')}
+                aria-invalid={Boolean(errors.directionIds)}
+                options={directionsForLevel.map((d) => ({
+                  value: d.id,
+                  label: `${d.code} — ${d.name}`,
+                }))}
+                emptyContent={t('subjects.no_directions_for_level')}
+              />
+            )}
+          />
+        </Field>
+
+        <label className="flex items-center gap-2 text-sm text-zinc-800">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-zinc-300"
+            {...register('isActive')}
+          />
+          {t('subjects.fields.isActive')}
+        </label>
+      </form>
+    </Dialog>
+  );
+}
+
+function SubjectEditDialog({
+  open,
+  onClose,
+  subject,
+}: {
+  open: boolean;
+  onClose: () => void;
+  subject: Subject;
+}) {
+  const { t } = useTranslation();
+  const updateMut = useUpdateSubject(subject.id);
+  const { data: directionsList } = useDirections();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    setValue,
+    formState: { errors },
+  } = useForm<EditSubjectFormInput>({
+    resolver: zodResolver(EditSubjectFormSchema),
+    defaultValues: {
+      name: subject.name,
+      code: subject.code ?? '',
+      directionId: subject.directionId,
+      level: subject.level,
+      isActive: subject.isActive,
+    },
   });
 
   const directionId = useWatch({ control, name: 'directionId' });
@@ -61,25 +245,20 @@ export function SubjectFormModal({ open, onClose, subject }: Props) {
 
   useEffect(() => {
     if (open) {
-      reset(
-        subject
-          ? {
-              name: subject.name,
-              code: subject.code ?? '',
-              directionId: subject.directionId,
-              level: subject.level,
-              isActive: subject.isActive,
-            }
-          : DEFAULTS,
-      );
+      reset({
+        name: subject.name,
+        code: subject.code ?? '',
+        directionId: subject.directionId,
+        level: subject.level,
+        isActive: subject.isActive,
+      });
     }
   }, [open, subject, reset]);
 
-  const onSubmit = async (values: CreateSubjectInput) => {
+  const onSubmit = async (values: EditSubjectFormInput) => {
     const payload = { ...values, code: values.code?.trim() || null };
     try {
-      if (isEditing) await updateMut.mutateAsync(payload);
-      else await createMut.mutateAsync(payload);
+      await updateMut.mutateAsync(payload);
       onClose();
     } catch {
       /* hook toasts the error; keep modal open */
@@ -90,7 +269,8 @@ export function SubjectFormModal({ open, onClose, subject }: Props) {
     <Dialog
       open={open}
       onClose={onClose}
-      title={isEditing ? t('subjects.edit_title') : t('subjects.add_title')}
+      title={t('subjects.edit_title')}
+      className="max-w-2xl"
       footer={
         <>
           <Button variant="secondary" type="button" onClick={onClose}>
@@ -98,16 +278,16 @@ export function SubjectFormModal({ open, onClose, subject }: Props) {
           </Button>
           <Button
             type="submit"
-            form="subject-form"
-            loading={createMut.isPending || updateMut.isPending}
+            form="subject-form-edit"
+            loading={updateMut.isPending}
           >
-            {isEditing ? t('common.save') : t('common.create')}
+            {t('common.save')}
           </Button>
         </>
       }
     >
       <form
-        id="subject-form"
+        id="subject-form-edit"
         className="space-y-3"
         onSubmit={handleSubmit(onSubmit)}
         noValidate
@@ -161,7 +341,6 @@ export function SubjectFormModal({ open, onClose, subject }: Props) {
         </label>
 
         <input type="hidden" {...register('level')} />
-
       </form>
     </Dialog>
   );

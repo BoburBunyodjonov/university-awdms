@@ -11,13 +11,20 @@ export const WorkloadTypeEnum = z.enum([
   'practice',
   'lab',
   'control',
+  'individual_project',
   'course_project',
   'internship',
   'prediploma',
   'VQR',
+  'VQR_full_time',
+  'VQR_part_time',
   'MD',
   'NDP',
   'NS',
+  'phd_supervision_fulltime',
+  'phd_supervision_parttime',
+  'scientific_pedagogical',
+  'scientific_internship',
 ]);
 
 export const WorkloadCategoryEnum = z.enum(['auditorium', 'non_auditorium']);
@@ -36,11 +43,20 @@ export const FormulaScopeEnum = z.enum([
   'control',
   'practice',
   'lab',
+  'individual_project',
   'course_project',
+  'internship',
+  'prediploma',
   'VQR',
+  'VQR_full_time',
+  'VQR_part_time',
   'MD',
   'NDP',
   'NS',
+  'phd_supervision_fulltime',
+  'phd_supervision_parttime',
+  'scientific_pedagogical',
+  'scientific_internship',
 ]);
 
 export const AssignmentActionEnum = z.enum(['assign', 'reassign', 'unassign']);

@@ -67,19 +67,35 @@ export class SubjectsService {
   }
 
   async create(dto: CreateSubjectDto) {
-    await this.assertDirectionMatchesLevel(dto.directionId, dto.level);
+    const { directionIds, ...rest } = dto;
+    const code =
+      rest.code === undefined || rest.code === '' ? null : rest.code ?? null;
+    for (const directionId of directionIds) {
+      await this.assertDirectionMatchesLevel(directionId, rest.level);
+    }
+    const include = {
+      direction: { select: { id: true, name: true, code: true } },
+      _count: { select: { offerings: true } },
+    };
     try {
-      return await this.prisma.subject.create({
-        data: dto,
-        include: {
-          direction: { select: { id: true, name: true, code: true } },
-          _count: { select: { offerings: true } },
-        },
-      });
+      return await this.prisma.$transaction(
+        directionIds.map((directionId) =>
+          this.prisma.subject.create({
+            data: {
+              name: rest.name,
+              code,
+              level: rest.level,
+              isActive: rest.isActive,
+              directionId,
+            },
+            include,
+          }),
+        ),
+      );
     } catch (err) {
       if ((err as { code?: string }).code === 'P2002') {
         throw new ConflictException(
-          `Subject "${dto.name}" already exists under this direction`,
+          `Subject "${dto.name}" already exists under at least one of the selected directions`,
         );
       }
       throw err;

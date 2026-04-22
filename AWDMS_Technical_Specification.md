@@ -79,29 +79,35 @@ to the following errors:
 
 **In-class (Auditorium) Workload**
 
--   Lecture
+-   Lecture (Ma'ruza)
 
--   Practical
+-   Practical (Amaliyot)
 
 -   Laboratory
 
--   Assessment (Nazorat)
+-   Assessment / Control (Nazorat)
+
+-   Individual Project
 
 -   Course project work
 
 **Out-of-class (Non-auditorium) Workload**
 
--   Industrial internship supervision
+-   Industrial internship supervision (3rd year)
 
 -   Pre-diploma internship supervision
 
--   Final Qualifying Work (FQW / VQR)
+-   Final Qualifying Work (FQW / VQR) --- full-time / part-time
 
--   Master\'s dissertation (MD)
+-   Master\'s dissertation (MD) --- PhD only
 
--   Research degree project (NDP)
+-   Scientific Pedagogical Work (NDP) --- PhD only
 
--   Academic internship (NS)
+-   Scientific Internship (NS) --- PhD only
+
+-   PhD Supervision (Full-time) --- PhD only
+
+-   PhD Supervision (Part-time) --- PhD only
 
 -   Other supervision-type work
 
@@ -148,6 +154,20 @@ to the following errors:
 
 16. Department total workload = sum of all workload items assigned to
     all teachers.
+
+17. PhD-only work (Scientific Pedagogical Work, Scientific Internship, PhD
+    Supervision, MD, NDP, NS) is limited to a maximum of 3 students per
+    teacher.
+
+18. A group cannot be duplicated across different teachers for the same
+    workload type in the same semester.
+
+19. Individual Project work counts as auditorium (in-class) workload and
+    is assigned per student-group combination.
+
+20. PhD Supervision has two sub-types (full-time and part-time) with
+    different coefficients but the same PhD-only and max-3-students
+    constraints.
 
 **2.3 Academic Structure**
 
@@ -292,6 +312,140 @@ have limited functionality in the MVP phase.
 
 -   Formula audit log
 
+**4.5.1 Formula Examples (Reference Calculations)**
+
+The formulas below are the official calculation rules used for workload
+generation and preview. Admin may edit coefficients and fixed values, but
+the formula shape per workload type is fixed.
+
+All formulas produce `plannedHours` (float, stored in `workload_items`).
+
+**Auditorium (in-class) Formulas**
+
+1.  **Lecture**
+
+    plannedHours = fixedHours
+
+    Example: fixedHours=30 -> 30 hours
+
+    Notes:
+    - Does not depend on student count
+    - For a merged lecture stream, lecture hours are calculated once per
+      stream (not per group)
+
+2.  **Practice (Practical)**
+
+    plannedHours = fixedHours * numberOfGroups
+
+    Example: fixedHours=24, numberOfGroups=2 -> 48 hours
+
+    Notes:
+    - Each linked group contributes one unit of fixedHours
+    - Cannot be split across teachers
+
+3.  **Control (Assessment / Nazorat)**
+
+    plannedHours = studentCount * coefficient
+
+    Example: coefficient=0.5, studentCount=80 -> 40 hours
+
+    Notes:
+    - For a merged lecture stream, studentCount = totalStudentCount of
+      the stream
+
+4.  **Laboratory**
+
+    plannedHours = fixedHours * groupCount
+
+    Example: fixedHours=18, groupCount=3 -> 54 hours
+
+5.  **Individual Project**
+
+    plannedHours = studentCount * groupCount * coefficient
+
+    Example: coefficient=0.25, studentCount=20, groupCount=2 -> 10 hours
+
+6.  **Course Project**
+
+    plannedHours = fixedValue
+
+    Example: fixedValue=20 -> 20 hours
+
+**Non-Auditorium (out-of-class) Formulas**
+
+7.  **VQR (Final Qualifying Work)**
+
+    plannedHours = studentCount * coefficient
+
+    Example: coefficient=1.5, studentCount=12 -> 18 hours
+
+    Notes:
+    - Separate coefficients for full-time vs part-time study types
+
+8.  **Industrial Internship (3rd year)**
+
+    plannedHours = studentCount * fixedValue
+
+    Example: fixedValue=2, studentCount=25 -> 50 hours
+
+9.  **Pre-Diploma Practice**
+
+    plannedHours = studentCount * fixedValue
+
+    Example: fixedValue=3, studentCount=15 -> 45 hours
+
+10. **Scientific Pedagogical Work (NDP)** — PhD only
+
+    plannedHours = studentCount * coefficient
+
+    Constraints:
+    - Teacher must have `hasScientificDegree = true`
+    - studentCount <= 3
+
+11. **Scientific Internship (NS)** — PhD only
+
+    plannedHours = studentCount * coefficient
+
+    Constraints:
+    - Teacher must have `hasScientificDegree = true`
+    - studentCount <= 3
+
+12. **PhD Supervision (Full-time)** — PhD only
+
+    plannedHours = studentCount * coefficient
+
+    Constraints:
+    - Teacher must have `hasScientificDegree = true`
+    - studentCount <= 3
+
+13. **PhD Supervision (Part-time)** — PhD only
+
+    plannedHours = studentCount * coefficient
+
+    Constraints:
+    - Teacher must have `hasScientificDegree = true`
+    - studentCount <= 3
+    - Different coefficient from full-time
+
+14. **Master's Dissertation (MD)** — PhD only
+
+    plannedHours = studentCount * coefficient
+
+    Constraints:
+    - Teacher must have `hasScientificDegree = true`
+    - studentCount <= 3
+
+**Shared Variables**
+
+-   `fixedHours`, `fixedValue`, `coefficient` come from
+    `formula_configs` (fields `baseHours`, `fixedValue`,
+    `coefficientPerStudent`, `fixedHoursPerStudent`, `fixedHoursPerGroup`)
+-   `studentCount` comes from the linked group(s) or lecture stream
+-   `groupCount` / `numberOfGroups` is the number of groups linked to
+    the workload item or subject offering
+-   All PhD-only formulas must pass both degree and max-student
+    validation before assignment is accepted
+
 **4.6 Lecture Stream Planning**
 
 -   Create a stream for a subject offering
@@ -360,6 +514,58 @@ have limited functionality in the MVP phase.
 
 -   Assigned subjects, streams, and supervision blocks
 
+**4.10.1 Teacher Workload Module UI Spec**
+
+This section defines the exact UI layout required on the teacher workload
+detail screen (`/teacher/load` and `/admin/teachers/:id`). It is the
+authoritative reference for implementing the workload module.
+
+**Summary panel (top of page)**
+
+-   Total Hours (annual)
+-   Auditorium Hours
+-   Non-Auditorium Hours
+-   Annual norm and delta (overload / underload indicator)
+-   Fall / Spring split bar
+
+**Workload table columns**
+
+-   Type (workload type badge with category color)
+-   Subject
+-   Group / Stream
+-   Students (studentCount)
+-   Hours (plannedHours)
+-   Semester
+-   Status (assigned / unassigned / invalid)
+
+**Filters**
+
+-   Semester (fall / spring / all)
+-   Type (multi-select by workloadType)
+-   Category (auditorium / non-auditorium)
+-   Status
+
+**Actions (admin view only)**
+
+-   Assign / reassign / unassign
+-   Open formula preview for a row
+-   Export this teacher's workload to Excel
+
+**Teacher profile card fields**
+
+-   fullName
+-   degree (PhD / NoDegree)
+-   position
+-   annualNorm (default 720 hours; configurable per teacher)
+-   assignedWorkloads count + totals
+-   isActive
+
+**Validation feedback in UI**
+
+-   PhD-only rows assigned to a non-PhD teacher show red badge with tooltip
+-   Rows exceeding max-3-students for PhD work show warning badge
+-   Rows with invalid/missing formula config show "invalid" status
+
 **4.11 Statistics & Reporting**
 
 -   Statistics by teacher, department, semester, category, and direction
@@ -376,6 +582,110 @@ have limited functionality in the MVP phase.
 
 -   Export: teacher load, department summary, semester summary,
     statistics
+
+**4.12.1 Excel Import Specification**
+
+Import is available only for admin users and only through the official
+template.
+
+**Template sheet names**
+
+-   `workload_items`
+-   `groups` (optional for synchronized import mode)
+-   `subject_offerings` (optional for synchronized import mode)
+
+**Required columns for `workload_items`**
+
+-   `academicYear`
+-   `subjectName`
+-   `directionCode`
+-   `groupName`
+-   `studyType`
+-   `courseYear`
+-   `semesterNumber`
+-   `academicTerm`
+-   `language`
+-   `workloadType`
+-   `studentCount`
+-   `formulaName` (or formulaId)
+-   `plannedHours` (optional if formula-driven generation is enabled)
+-   `teacherEmail` (optional; used for direct assignment on import)
+
+**Validation rules**
+
+-   File type must be `.xlsx`
+-   Max file size: 10 MB
+-   Max rows per import: 10,000 workload rows
+-   Header names must match template exactly
+-   All enum fields must match allowed values
+-   `studentCount` must be positive integer
+-   If `teacherEmail` is provided, teacher must exist and be active
+-   MD/NDP/NS rows must pass scientific degree restriction if teacher is
+    provided
+-   Duplicate rows in the same file are rejected
+
+**Import processing flow**
+
+1.  Upload file
+2.  Parse and validate all rows
+3.  Show preview with valid and invalid row counters
+4.  Commit only after admin confirmation
+5.  Persist import audit log (who, when, file name, row counts)
+
+**Import error report format**
+
+-   Row number
+-   Column name
+-   Error code
+-   Human-readable message
+-   Suggested fix
+
+Error report is downloadable as Excel and JSON.
+
+**Upsert behavior**
+
+-   Match key: academicYear + subjectName + groupName + workloadType +
+    semesterNumber
+-   If key exists and `overwrite=true`, update row
+-   If key exists and `overwrite=false`, skip row and report conflict
+
+**4.12.2 Excel Export Specification**
+
+Supported export types:
+
+-   Teacher annual workload
+-   Teacher semester workload
+-   Department summary
+-   Statistics export
+-   Monitoring export (unassigned/invalid/mismatch)
+
+**Common export columns**
+
+-   Academic year
+-   Semester / term
+-   Teacher
+-   Subject
+-   Group / stream
+-   Workload type
+-   Category (auditorium / non_auditorium)
+-   Student count
+-   Planned hours
+-   Assignment status
+
+**Export formatting requirements**
+
+-   Official header with university/department name
+-   Frozen header row
+-   Auto-width columns
+-   Numeric cells formatted as numbers (not text)
+-   Final summary rows (totals/subtotals)
+-   Generation timestamp and exported-by user
+
+**Export limits and performance**
+
+-   Synchronous export up to 5,000 rows
+-   Larger exports run as background job with status polling
+-   Generated files retained for 24 hours, then auto-deleted
 
 **4.13 Audit Log**
 
@@ -505,7 +815,10 @@ backend --- no duplication:
 > // shared/types/workload.ts\
 > export type WorkloadType =\
 > \'lecture\' \| \'practice\' \| \'lab\' \| \'control\'\
-> \| \'course_project\' \| \'VQR\' \| \'MD\' \| \'NDP\' \| \'NS\'\
+> \| \'individual_project\' \| \'course_project\'\
+> \| \'internship\' \| \'prediploma\'\
+> \| \'VQR\' \| \'MD\' \| \'NDP\' \| \'NS\'\
+> \| \'phd_supervision_fulltime\' \| \'phd_supervision_parttime\'\
 > \
 > export type AssignmentStatus = \'unassigned\' \| \'assigned\' \|
 > \'invalid\'\
@@ -529,6 +842,48 @@ backend --- no duplication:
 
   Environment Secrets    Platform secrets / .env files (never committed)
   ---------------------- ------------------------------------------------
+
+**5.6 Caching Strategy**
+
+Caching is mandatory for dashboard-heavy reads and statistics endpoints to
+keep response times stable under semester-scale data.
+
+**Cache layers**
+
+1.  **Frontend (TanStack Query)**
+
+-   Reference data (directions, formulas, teachers): staleTime 10 minutes
+-   Workload lists and monitoring tables: staleTime 60 seconds
+-   Statistics widgets: staleTime 2 minutes
+-   Use background refetch on window focus only for critical views
+
+2.  **Backend in-memory / Redis cache**
+
+-   Use Redis for shared cache in production
+-   Cache key pattern: `awdms:{module}:{scope}:{hash}`
+-   Cacheable endpoints:
+    - `/api/statistics/*` (TTL 120s)
+    - `/api/monitoring/summary-mismatch` (TTL 60s)
+    - `/api/directions`, `/api/formulas`, `/api/academic-years` (TTL 600s)
+
+3.  **Database optimization (not replacement for cache)**
+
+-   Add indexes on high-filter columns (academicYearId, teacherId,
+    workloadType, status, semesterNumber)
+-   Use materialized views for heavy department summary aggregates if needed
+
+**Invalidation rules**
+
+-   On create/update/delete of workload/formula/assignment, invalidate
+    affected module keys immediately
+-   After bulk import, clear statistics and monitoring caches
+-   Nightly scheduled cache warm-up for dashboard endpoints
+
+**Safety rules**
+
+-   Never cache authentication tokens or sensitive personal data
+-   Per-user data must be keyed with user scope to prevent data leakage
+-   Cache failures must not break request flow (graceful fallback to DB)
 
 **6. Pages & Sitemap**
 
@@ -726,8 +1081,12 @@ references become foreign keys (UUID or SERIAL).
 > subjectOfferingId: FK -\> subject_offerings (nullable)\
 > lectureStreamId: FK -\> lecture_streams (nullable)\
 > groupId: FK -\> groups (nullable)\
-> workloadType: lecture \| practice \| lab \| control \| course_project\
-> \| internship \| prediploma \| VQR \| MD \| NDP \| NS\
+> workloadType: lecture \| practice \| lab \| control\
+> \| individual_project \| course_project\
+> \| internship \| prediploma\
+> \| VQR \| MD \| NDP \| NS\
+> \| phd_supervision_fulltime \| phd_supervision_parttime\
+> maxStudentsAllowed: integer (nullable) // 3 for PhD-only types\
 > category: auditorium \| non_auditorium\
 > studentCount: integer\
 > plannedHours: float\

@@ -1,6 +1,12 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { BarChart3, ClipboardList, LayoutDashboard, LogOut } from 'lucide-react';
+import {
+  BarChart3,
+  ClipboardList,
+  LayoutDashboard,
+  LogOut,
+  User,
+} from 'lucide-react';
 import { RoleGuard } from '@/components/auth/RoleGuard';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { Button } from '@/components/ui/button';
@@ -11,6 +17,7 @@ const NAV = [
   { to: '/teacher', i18nKey: 'nav.dashboard', icon: LayoutDashboard, end: true },
   { to: '/teacher/load', i18nKey: 'nav.workload', icon: ClipboardList },
   { to: '/teacher/statistics', i18nKey: 'nav.statistics', icon: BarChart3 },
+  { to: '/teacher/profile', i18nKey: 'nav.profile', icon: User },
 ] as const;
 
 export function TeacherLayout() {

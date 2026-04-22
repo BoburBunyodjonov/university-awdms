@@ -51,15 +51,28 @@ export function useCreateSubject() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreateSubjectInput) => {
-      const { data } = await api.post<SubjectWithRelations>(
+      const { data } = await api.post<SubjectWithRelations[] | SubjectWithRelations>(
         '/subjects',
         input,
       );
       return data;
     },
-    onSuccess: (s) => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['subjects'] });
-      toast.success(t('toasts.created', { name: s.name }));
+      if (Array.isArray(data) && data.length > 1) {
+        const first = data[0]!;
+        toast.success(
+          t('toasts.subjects_created_batch', {
+            name: first.name,
+            count: data.length,
+          }),
+        );
+      } else {
+        const s = Array.isArray(data) ? data[0] : data;
+        if (s) {
+          toast.success(t('toasts.created', { name: s.name }));
+        }
+      }
     },
     onError: (err) => toast.error(getErrorMessage(err)),
   });

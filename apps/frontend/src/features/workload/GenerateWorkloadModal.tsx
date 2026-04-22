@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/select';
 import { useAcademicYears } from '@/features/academic-years/api';
 import { useSubjectOfferings } from '@/features/subject-offerings/api';
 import { useGenerateWorkload } from './api';
+import { LIST_PAGE_SIZE_MAX } from '@/lib/pagination';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -23,7 +24,10 @@ export function GenerateWorkloadModal({
 }: Props) {
   const { t } = useTranslation();
   const { data: years } = useAcademicYears();
-  const { data: offeringsList } = useSubjectOfferings({ pageSize: 100 });
+  const { data: offeringsList } = useSubjectOfferings({
+    page: 1,
+    pageSize: LIST_PAGE_SIZE_MAX,
+  });
   const generateMut = useGenerateWorkload();
 
   const [yearId, setYearId] = useState(defaultAcademicYearId ?? '');

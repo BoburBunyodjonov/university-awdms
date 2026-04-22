@@ -5,6 +5,7 @@
   "description": "AWDMS backend — NestJS + Prisma (PostgreSQL)",
   "main": "dist/main.js",
   "scripts": {
+    "postinstall": "prisma generate",
     "build": "nest build && npm run build:seed",
     "build:seed": "tsc -p prisma/tsconfig.seed.json",
     "start": "node dist/main.js",

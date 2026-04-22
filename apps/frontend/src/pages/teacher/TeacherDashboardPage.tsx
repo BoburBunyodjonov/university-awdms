@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Award, BookOpen, Clock, Download, Users } from 'lucide-react';
 import type { WorkloadType } from '@awdms/shared';
@@ -6,22 +6,69 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable, Td, Th } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
-import { StatusBadge } from '@/components/ui/badge';
 import { PageLoader } from '@/components/ui/page-loader';
 import { useMyWorkload } from '@/features/my-workload/api';
 import { useAcademicYears } from '@/features/academic-years/api';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
+const WORKLOAD_TYPES: WorkloadType[] = [
+  'lecture',
+  'practice',
+  'lab',
+  'control',
+  'individual_project',
+  'course_project',
+  'internship',
+  'prediploma',
+  'VQR',
+  'VQR_full_time',
+  'VQR_part_time',
+  'MD',
+  'NDP',
+  'NS',
+  'phd_supervision_fulltime',
+  'phd_supervision_parttime',
+  'scientific_pedagogical',
+  'scientific_internship',
+];
+
+type TermFilter = 'all' | 'fall' | 'spring';
+
 export function TeacherDashboardPage() {
   const { t } = useTranslation();
   const { data: years } = useAcademicYears();
   const [yearId, setYearId] = useState<string>('');
+  const [termFilter, setTermFilter] = useState<TermFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<WorkloadType | ''>('');
 
   const effectiveYearId =
     yearId || years?.find((y) => y.isActive)?.id || years?.[0]?.id;
 
   const { data, isLoading, error } = useMyWorkload(effectiveYearId);
+
+  const items = data?.assignedWorkloads ?? data?.items ?? [];
+
+  const filteredItems = useMemo(() => {
+    return items.filter((i) => {
+      if (termFilter !== 'all') {
+        if (i.subjectOffering?.academicTerm !== termFilter) return false;
+      }
+      if (typeFilter && i.workloadType !== typeFilter) return false;
+      return true;
+    });
+  }, [items, termFilter, typeFilter]);
+
+  const filteredTotals = useMemo(() => {
+    const totalHours = filteredItems.reduce((n, i) => n + i.plannedHours, 0);
+    const auditoriumHours = filteredItems
+      .filter((i) => i.category === 'auditorium')
+      .reduce((n, i) => n + i.plannedHours, 0);
+    const nonAuditoriumHours = filteredItems
+      .filter((i) => i.category === 'non_auditorium')
+      .reduce((n, i) => n + i.plannedHours, 0);
+    return { totalHours, auditoriumHours, nonAuditoriumHours, count: filteredItems.length };
+  }, [filteredItems]);
 
   const onDownload = async () => {
     if (!effectiveYearId) return;
@@ -53,15 +100,15 @@ export function TeacherDashboardPage() {
   }
 
   const overNorm =
-    data?.teacher && data.totals.totalHours > data.teacher.annualNorm;
+    data?.teacher && filteredTotals.totalHours > data.teacher.annualNorm;
   const utilisation =
     data?.teacher && data.teacher.annualNorm > 0
-      ? (data.totals.totalHours / data.teacher.annualNorm) * 100
+      ? (filteredTotals.totalHours / data.teacher.annualNorm) * 100
       : 0;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold text-zinc-900">
             {data?.teacher.fullName ?? t('my_workload.title')}
@@ -69,6 +116,8 @@ export function TeacherDashboardPage() {
           {data?.teacher ? (
             <p className="text-xs text-zinc-600">
               {data.teacher.position} · {data.teacher.degreeName}
+              {' '}
+              ({data.teacher.degree})
               {data.teacher.hasScientificDegree ? (
                 <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-900">
                   <Award className="h-3 w-3" aria-hidden="true" />
@@ -78,7 +127,28 @@ export function TeacherDashboardPage() {
             </p>
           ) : null}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            className="w-40"
+            value={termFilter}
+            onValueChange={(v) => setTermFilter((v as TermFilter) ?? 'all')}
+            options={[
+              { value: 'all', label: t('my_workload.all_terms') },
+              { value: 'fall', label: t('academicTerm.fall') },
+              { value: 'spring', label: t('academicTerm.spring') },
+            ]}
+          />
+          <Select
+            className="w-44"
+            value={typeFilter}
+            onValueChange={(v) => setTypeFilter((v as WorkloadType) || '')}
+            clearable
+            placeholder={t('my_workload.filter_type')}
+            options={WORKLOAD_TYPES.map((wt) => ({
+              value: wt,
+              label: t(`workloadType.${wt}`),
+            }))}
+          />
           <Select
             className="w-44"
             value={yearId || effectiveYearId}
@@ -101,10 +171,10 @@ export function TeacherDashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <Kpi
           label={t('my_workload.annual')}
-          value={data ? `${data.totals.totalHours.toFixed(1)}h` : '—'}
+          value={`${filteredTotals.totalHours.toFixed(1)}h`}
           sub={
             data?.teacher
               ? t('my_workload.norm_hint', {
@@ -116,21 +186,23 @@ export function TeacherDashboardPage() {
           tone={overNorm ? 'warn' : 'ok'}
         />
         <Kpi
+          label={t('my_workload.auditorium_kpi')}
+          value={`${filteredTotals.auditoriumHours.toFixed(1)}h`}
+        />
+        <Kpi
+          label={t('my_workload.non_auditorium_kpi')}
+          value={`${filteredTotals.nonAuditoriumHours.toFixed(1)}h`}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <Kpi
           label={t('my_workload.fall')}
           value={data ? `${data.byTerm.fall.toFixed(1)}h` : '—'}
         />
         <Kpi
           label={t('my_workload.spring')}
           value={data ? `${data.byTerm.spring.toFixed(1)}h` : '—'}
-        />
-        <Kpi
-          label={t('my_workload.category_split')}
-          value={
-            data
-              ? `${data.totals.auditoriumHours.toFixed(0)} / ${data.totals.nonAuditoriumHours.toFixed(0)}h`
-              : '—'
-          }
-          sub={t('my_workload.category_hint')}
         />
       </div>
 
@@ -141,31 +213,34 @@ export function TeacherDashboardPage() {
             {t('my_workload.items_title')}
           </CardTitle>
           <span className="text-xs text-zinc-500">
-            {data?.totals.items ?? 0} {t('my_workload.items')}
+            {filteredTotals.count} {t('my_workload.items')}
+            {termFilter !== 'all' || typeFilter ? ` (${t('common.filter')})` : ''}
           </span>
         </CardHeader>
 
         <DataTable
           isLoading={isLoading}
           empty={
-            data && data.items.length === 0
-              ? t('my_workload.empty')
-              : undefined
+            filteredItems.length === 0 ? t('my_workload.empty') : undefined
           }
         >
           <thead>
             <tr>
-              <Th>{t('workload.fields.subject')}</Th>
               <Th>{t('workload.fields.type')}</Th>
-              <Th>{t('workload.fields.scope')}</Th>
+              <Th>{t('workload.fields.subject')}</Th>
+              <Th>{t('workload.group')}</Th>
               <Th className="text-right">{t('workload.fields.students')}</Th>
               <Th className="text-right">{t('workload.fields.hours')}</Th>
-              <Th>{t('workload.fields.status')}</Th>
             </tr>
           </thead>
           <tbody>
-            {data?.items.map((i) => (
+            {filteredItems.map((i) => (
               <tr key={i.id} className="hover:bg-zinc-50">
+                <Td>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs font-medium text-zinc-700">
+                    {t(`workloadType.${i.workloadType as WorkloadType}`)}
+                  </span>
+                </Td>
                 <Td className="font-medium text-zinc-900">
                   {i.subjectOffering?.subject.name ?? '—'}
                   <div className="text-[10px] font-normal text-zinc-500">
@@ -175,20 +250,12 @@ export function TeacherDashboardPage() {
                       : ''}
                   </div>
                 </Td>
-                <Td>
-                  <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs font-medium text-zinc-700">
-                    {t(`workloadType.${i.workloadType as WorkloadType}`)}
-                  </span>
-                </Td>
                 <Td className="text-xs text-zinc-700">
-                  {i.lectureStream
-                    ? `${t('workload.stream_of')} ${i.lectureStream.totalStudentCount}`
-                    : ''}
-                  {i.group ? (
-                    <span className="block">
-                      {t('workload.group')}: {i.group.name}
-                    </span>
-                  ) : null}
+                  {i.group
+                    ? i.group.name
+                    : i.lectureStream
+                      ? `${t('workload.stream_of')} ${i.lectureStream.totalStudentCount}`
+                      : '—'}
                 </Td>
                 <Td className="text-right tabular-nums">
                   <span className="inline-flex items-center gap-1">
@@ -207,9 +274,6 @@ export function TeacherDashboardPage() {
                     />
                     {i.plannedHours.toFixed(1)}
                   </span>
-                </Td>
-                <Td>
-                  <StatusBadge status={i.status} />
                 </Td>
               </tr>
             ))}

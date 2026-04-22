@@ -42,6 +42,9 @@ export interface Teacher {
   isActive: boolean;
   createdAt: IsoDateTime;
   updatedAt: IsoDateTime;
+  /** On list API: sum of `plannedHours` for assigned items, split by category (all academic years). */
+  auditoriumHours?: number;
+  nonAuditoriumHours?: number;
 }
 
 // Section 7.3

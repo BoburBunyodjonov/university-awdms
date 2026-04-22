@@ -1,11 +1,7 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import type { FormulaConfig, Prisma } from '@prisma/client';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { evaluateFormula } from '../workload/formula-engine';
 import type {
   CreateFormulaDto,
   FormulaQueryDto,
@@ -18,12 +14,12 @@ export class FormulasService {
   constructor(private readonly prisma: PrismaService) {}
 
   async list(q: FormulaQueryDto) {
-    const where: Prisma.FormulaConfigWhereInput = {
+    const where = {
       ...(q.scopeType ? { scopeType: q.scopeType } : {}),
       ...(q.level ? { level: q.level } : {}),
       ...(q.studyType ? { studyType: q.studyType } : {}),
       ...(q.isActive !== undefined ? { isActive: q.isActive } : {}),
-    };
+    } as Prisma.FormulaConfigWhereInput;
 
     const items = await this.prisma.formulaConfig.findMany({
       where,
@@ -43,7 +39,10 @@ export class FormulasService {
   async create(dto: CreateFormulaDto) {
     try {
       return await this.prisma.formulaConfig.create({
-        data: { ...dto, effectiveFrom: new Date(dto.effectiveFrom) },
+        data: {
+          ...dto,
+          effectiveFrom: new Date(dto.effectiveFrom),
+        } as Prisma.FormulaConfigUncheckedCreateInput,
       });
     } catch (err) {
       if ((err as { code?: string }).code === 'P2002') {
@@ -65,7 +64,7 @@ export class FormulasService {
           effectiveFrom: dto.effectiveFrom
             ? new Date(dto.effectiveFrom)
             : undefined,
-        },
+        } as Prisma.FormulaConfigUpdateInput,
       });
     } catch (err) {
       if ((err as { code?: string }).code === 'P2002') {
@@ -94,28 +93,11 @@ export class FormulasService {
   // configured calculation mode, without persisting anything.
   async preview(id: string, input: PreviewFormulaDto) {
     const formula = await this.findOne(id);
-    const planned = evaluate(formula, input.studentCount, input.groupCount);
+    const planned = evaluateFormula(
+      formula,
+      input.studentCount,
+      input.groupCount,
+    );
     return { planned, formula };
-  }
-}
-
-function evaluate(
-  f: FormulaConfig,
-  studentCount: number,
-  groupCount: number,
-): number {
-  switch (f.calculationMode) {
-    case 'coefficient_based':
-      return f.baseHours + f.coefficientPerStudent * studentCount;
-    case 'fixed_per_student':
-      return f.fixedHoursPerStudent * studentCount;
-    case 'fixed_per_group':
-      return f.fixedHoursPerGroup * groupCount;
-    case 'fixed_value':
-      return f.fixedValue;
-    default:
-      throw new BadRequestException(
-        `Unknown calculation mode: ${String(f.calculationMode)}`,
-      );
   }
 }

@@ -1,14 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AppCacheService } from '../common/app-cache.service';
 
 export interface MonitoringSummary {
   academicYearId: string | null;
   totals: {
     totalHours: number;
+    /** Sum of planned hours on items with a teacher */
+    assignedHours: number;
+    /** Sum of planned hours on unassigned items */
+    unassignedHours: number;
+    /** Sum of active teachers' annualNorm (department hour budget) */
+    totalDepartmentNorm: number;
+    /** max(0, totalDepartmentNorm − assignedHours) */
+    remainingNormHours: number;
+    activeTeacherCount: number;
     auditoriumHours: number;
     nonAuditoriumHours: number;
     items: number;
+    /** Count of items with a teacher */
     assigned: number;
     unassigned: number;
     invalid: number;
@@ -30,11 +41,30 @@ export interface TeacherLoad {
   utilisation: number; // 0..1 (>1 means over)
 }
 
+export interface RecentAssignmentRow {
+  id: string;
+  action: string;
+  createdAt: string;
+  workloadItemId: string;
+  workloadType: string;
+  plannedHours: number;
+  subjectName: string | null;
+  subjectCode: string | null;
+  oldTeacherName: string | null;
+  newTeacherName: string | null;
+  performedByName: string;
+}
+
 @Injectable()
 export class MonitoringService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: AppCacheService,
+  ) {}
 
   async summary(academicYearId?: string): Promise<MonitoringSummary> {
+    const key = `monitoring:summary:${academicYearId ?? 'all'}`;
+    return this.cache.wrap(key, 120_000, async () => {
     const where: Prisma.WorkloadItemWhereInput = academicYearId
       ? { academicYearId }
       : {};
@@ -64,6 +94,15 @@ export class MonitoringService {
     });
 
     const totalHours = items.reduce((n, i) => n + i.plannedHours, 0);
+    const assignedHours = items
+      .filter((i) => i.assignedTeacherId)
+      .reduce((n, i) => n + i.plannedHours, 0);
+    const unassignedHours = Math.max(0, totalHours - assignedHours);
+    const totalDepartmentNorm = activeTeachers.reduce(
+      (n, t) => n + t.annualNorm,
+      0,
+    );
+    const remainingNormHours = Math.max(0, totalDepartmentNorm - assignedHours);
     const auditoriumHours = items
       .filter((i) => i.category === 'auditorium')
       .reduce((n, i) => n + i.plannedHours, 0);
@@ -123,6 +162,11 @@ export class MonitoringService {
       academicYearId: academicYearId ?? null,
       totals: {
         totalHours,
+        assignedHours,
+        unassignedHours,
+        totalDepartmentNorm,
+        remainingNormHours,
+        activeTeacherCount: activeTeachers.length,
         auditoriumHours,
         nonAuditoriumHours,
         items: items.length,
@@ -142,10 +186,13 @@ export class MonitoringService {
       overNorm,
       underNorm,
     };
+    });
   }
 
   async unassigned(academicYearId?: string) {
-    return this.prisma.workloadItem.findMany({
+    const key = `monitoring:unassigned:${academicYearId ?? 'all'}`;
+    return this.cache.wrap(key, 60_000, () =>
+      this.prisma.workloadItem.findMany({
       where: {
         assignedTeacherId: null,
         ...(academicYearId ? { academicYearId } : {}),
@@ -156,6 +203,57 @@ export class MonitoringService {
         group: { select: { id: true, name: true } },
       },
       orderBy: [{ workloadType: 'asc' }, { createdAt: 'desc' }],
+      }),
+    );
+  }
+
+  /**
+   * Latest assignment / reassign / unassign events (for admin dashboard).
+   */
+  async recentAssignments(
+    academicYearId: string | undefined,
+    limit = 20,
+  ): Promise<RecentAssignmentRow[]> {
+    const take = Math.min(100, Math.max(1, limit));
+    const key = `monitoring:recent:${academicYearId ?? 'all'}:${take}`;
+    return this.cache.wrap(key, 60_000, async () => {
+      const rows = await this.prisma.assignmentLog.findMany({
+        where: academicYearId
+          ? { workloadItem: { academicYearId } }
+          : {},
+        include: {
+          workloadItem: {
+            select: {
+              id: true,
+              workloadType: true,
+              plannedHours: true,
+              subjectOffering: {
+                select: {
+                  subject: { select: { name: true, code: true } },
+                },
+              },
+            },
+          },
+          newTeacher: { select: { fullName: true } },
+          oldTeacher: { select: { fullName: true } },
+          performedBy: { select: { fullName: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take,
+      });
+      return rows.map((r) => ({
+        id: r.id,
+        action: r.action,
+        createdAt: r.createdAt.toISOString(),
+        workloadItemId: r.workloadItemId,
+        workloadType: r.workloadItem.workloadType,
+        plannedHours: r.workloadItem.plannedHours,
+        subjectName: r.workloadItem.subjectOffering?.subject.name ?? null,
+        subjectCode: r.workloadItem.subjectOffering?.subject.code ?? null,
+        oldTeacherName: r.oldTeacher?.fullName ?? null,
+        newTeacherName: r.newTeacher?.fullName ?? null,
+        performedByName: r.performedBy.fullName,
+      }));
     });
   }
 }
