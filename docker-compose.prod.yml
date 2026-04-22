@@ -7,20 +7,21 @@ services:
     restart: unless-stopped
     env_file:
       - apps/backend/.env.production
-    # Until this passes, the API is not listening — nginx was returning 502 if frontend
-    # started first. `start_period` allows migrate/seed to finish before failures count.
+    # Uses PORT from env (if set in .env.production, must match). Drains the response
+    # body or Node can leave sockets in a bad state. Do not gate frontend on this —
+    # use `start_period` so migrate/seed do not mark the container "failed" too early.
     healthcheck:
       test:
         [
           "CMD",
           "node",
           "-e",
-          "require('http').get('http://127.0.0.1:4000/api/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+          "const p=process.env.PORT||4000;const u='http://127.0.0.1:'+p+'/api/health';require('http').get(u,r=>{r.resume();r.on('end',()=>process.exit(r.statusCode===200?0:1))}).on('error',()=>process.exit(1));",
         ]
-      interval: 5s
+      interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 300s
+      retries: 5
+      start_period: 600s
     networks:
       - awdms-net
 
@@ -34,9 +35,10 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+    # Do not use service_healthy here: if the health probe or migrate/DB is slow, Compose
+    # refuses to start nginx and the whole site stays down. Backend still starts first.
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     networks:
       - awdms-net
 
