@@ -7,6 +7,9 @@ services:
     restart: unless-stopped
     env_file:
       - apps/backend/.env.production
+    # Optional: host nginx can proxy /api directly to 127.0.0.1:4000 (bypasses UI container).
+    ports:
+      - "${AWDMS_BACKEND_PUBLISH:-127.0.0.1:4000:4000}"
     # Uses PORT from env (if set in .env.production, must match). Drains the response
     # body or Node can leave sockets in a bad state. Do not gate frontend on this —
     # use `start_period` so migrate/seed do not mark the container "failed" too early.
