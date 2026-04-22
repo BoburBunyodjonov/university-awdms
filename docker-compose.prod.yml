@@ -33,8 +33,10 @@ services:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
     container_name: awdms-frontend
     restart: unless-stopped
+    # Host :80 is often taken by system nginx. Default: 127.0.0.1:8080 → point nginx to
+    # http://127.0.0.1:8080 (see root .env: AWDMS_HTTP_PUBLISH).
     ports:
-      - "80:80"
+      - "${AWDMS_HTTP_PUBLISH:-127.0.0.1:8080}:80"
     # Do not use service_healthy here: if the health probe or migrate/DB is slow, Compose
     # refuses to start nginx and the whole site stays down. Backend still starts first.
     depends_on:

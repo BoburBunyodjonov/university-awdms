@@ -48,5 +48,6 @@ echo "==> Last backend logs (120 lines):"
 docker compose -f "${COMPOSE_FILE}" logs --tail=120 backend || true
 
 echo "==> Deploy finished."
-echo "    API liveness: curl -sS http://localhost/api/health"
-echo "    Swagger:      curl -I http://localhost/api/docs"
+echo "    UI (Docker nginx): set AWDMS_HTTP_PUBLISH in root .env (default 127.0.0.1:8080)"
+echo "    Test:   curl -sS http://127.0.0.1:8080/api/health   (or your published host:port)"
+echo "    Swagger: curl -sS -I http://127.0.0.1:8080/api/docs"
