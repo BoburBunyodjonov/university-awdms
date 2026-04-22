@@ -8,13 +8,16 @@ COPY apps/backend/package.json apps/backend/package.json
 COPY apps/frontend/package.json apps/frontend/package.json
 COPY apps/workload-mock-ui/package.json apps/workload-mock-ui/package.json
 COPY packages/shared/package.json packages/shared/package.json
-RUN npm ci
+# Do not run lifecycle scripts here: backend "postinstall" needs prisma + schema, bcrypt
+# needs a native build on Alpine — both break before full source is present. We generate
+# Prisma and compile after COPY below.
+RUN npm ci --ignore-scripts
 
 COPY packages/shared packages/shared
 COPY apps/backend apps/backend
 
 RUN npm run --workspace packages/shared build
-RUN npm run --workspace apps/backend prisma:generate
+# `build` runs `prisma generate` first (see apps/backend/package.json)
 RUN npm run --workspace apps/backend build
 
 FROM node:20-alpine AS runner

@@ -11,6 +11,9 @@ COPY apps/backend/package.json apps/backend/package.json
 COPY apps/frontend/package.json apps/frontend/package.json
 COPY apps/workload-mock-ui/package.json apps/workload-mock-ui/package.json
 COPY packages/shared/package.json packages/shared/package.json
+# Monorepo pulls backend deps (e.g. bcrypt) — native build on Alpine needs a toolchain.
+# Prisma is no longer run on `npm install`; it runs during `apps/backend` `npm run build`.
+RUN apk add --no-cache python3 make g++
 RUN npm ci
 
 COPY packages/shared packages/shared
