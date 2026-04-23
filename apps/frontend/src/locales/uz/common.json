@@ -41,18 +41,18 @@
     "control": "Nazorat",
     "individual_project": "Individual loyiha",
     "course_project": "Kurs ishi",
-    "internship": "Amaliyot",
+    "internship": "Ishlab chiqarish amaliyoti",
     "prediploma": "Bitiruv oldi amaliyot",
     "VQR": "VQR (eski)",
-    "VQR_full_time": "VQR (kunduzgi / to‘liq)",
-    "VQR_part_time": "VQR (sirtqi / qisman)",
+    "VQR_full_time": "Bitiruv malakaviy ishi (kunduzgi)",
+    "VQR_part_time": "Bitiruv malakaviy ishi (sirtqi)",
     "MD": "MD",
     "NDP": "NDP",
     "NS": "NS",
     "phd_supervision_fulltime": "PhD rahbarligi (kunduzgi)",
     "phd_supervision_parttime": "PhD rahbarligi (sirtqi)",
-    "scientific_pedagogical": "Ilmiy-pedagogik (PhD)",
-    "scientific_internship": "Ilmiy staj (PhD)"
+    "scientific_pedagogical": "Ilmiy pedagogik ish",
+    "scientific_internship": "Ilmiy stajirovka"
   },
   "calculationMode": {
     "coefficient_based": "Koeffitsientli",
@@ -195,11 +195,12 @@
     "multi_select_placeholder": "Bir yoki bir nechta yo'nalishni tanlang…",
     "fields": {
       "name": "Fan nomi",
-      "code": "Kod",
-      "code_hint": "Ixtiyoriy qisqa kod, masalan CS101",
       "direction": "Yo'nalish",
       "directions_multi": "Yo'nalishlar",
       "directions_multi_hint": "Har tanlangan yo'nalish uchun alohida fan qatori. Kamida bittasini tanlang.",
+      "lectureCoefficient": "Ma'ruza koeffitsienti",
+      "controlCoefficient": "Nazorat koeffitsienti",
+      "practiceCoefficient": "Amaliyot koeffitsienti",
       "level": "Daraja",
       "offerings": "Yuklamalar",
       "isActive": "Faol"
@@ -339,6 +340,8 @@
     "stream_badge": "Ma'ruzalar oqimi",
     "stream_students": "talaba",
     "group": "Guruh",
+    "unknown_term": "Semestr belgilanmagan",
+    "unknown_term_hint": "Eski yoki qo'lda kiritilgan yuklama; ma'lumot to'g'rla.",
     "fallbacks": {
       "no_offering_detail": "Faqat {{year}} o‘quv yili (qatorda fan biriktirmasi yo‘q)"
     },

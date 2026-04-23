@@ -68,8 +68,6 @@ export class SubjectsService {
 
   async create(dto: CreateSubjectDto) {
     const { directionIds, ...rest } = dto;
-    const code =
-      rest.code === undefined || rest.code === '' ? null : rest.code ?? null;
     for (const directionId of directionIds) {
       await this.assertDirectionMatchesLevel(directionId, rest.level);
     }
@@ -83,9 +81,11 @@ export class SubjectsService {
           this.prisma.subject.create({
             data: {
               name: rest.name,
-              code,
               level: rest.level,
               isActive: rest.isActive,
+              lectureCoefficient: rest.lectureCoefficient,
+              controlCoefficient: rest.controlCoefficient,
+              practiceCoefficient: rest.practiceCoefficient,
               directionId,
             },
             include,

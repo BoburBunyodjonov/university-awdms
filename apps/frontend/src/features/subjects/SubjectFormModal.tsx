@@ -26,8 +26,10 @@ interface Props {
 
 const CREATE_DEFAULTS: CreateSubjectInput = {
   name: '',
-  code: '',
   directionIds: [],
+  lectureCoefficient: 0,
+  controlCoefficient: 0,
+  practiceCoefficient: 0,
   level: 'bachelor',
   isActive: true,
 };
@@ -89,12 +91,8 @@ function SubjectCreateDialog({
   }, [open, reset]);
 
   const onSubmit = async (values: CreateSubjectInput) => {
-    const payload = {
-      ...values,
-      code: values.code?.trim() || null,
-    };
     try {
-      await createMut.mutateAsync(payload);
+      await createMut.mutateAsync(values);
       onClose();
     } catch {
       /* hook toasts the error; keep modal open */
@@ -134,13 +132,6 @@ function SubjectCreateDialog({
 
         <div className="grid grid-cols-2 gap-3">
           <Field
-            label={t('subjects.fields.code')}
-            error={errors.code?.message}
-            hint={t('subjects.fields.code_hint')}
-          >
-            <Input {...register('code')} />
-          </Field>
-          <Field
             label={t('subjects.fields.level')}
             error={errors.level?.message}
           >
@@ -158,6 +149,48 @@ function SubjectCreateDialog({
                   ]}
                 />
               )}
+            />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <Field
+            label={t('subjects.fields.lectureCoefficient')}
+            error={errors.lectureCoefficient?.message}
+          >
+            <Input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="0.01"
+              placeholder="0"
+              {...register('lectureCoefficient', { valueAsNumber: true })}
+            />
+          </Field>
+          <Field
+            label={t('subjects.fields.controlCoefficient')}
+            error={errors.controlCoefficient?.message}
+          >
+            <Input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="0.01"
+              placeholder="0"
+              {...register('controlCoefficient', { valueAsNumber: true })}
+            />
+          </Field>
+          <Field
+            label={t('subjects.fields.practiceCoefficient')}
+            error={errors.practiceCoefficient?.message}
+          >
+            <Input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="0.01"
+              placeholder="0"
+              {...register('practiceCoefficient', { valueAsNumber: true })}
             />
           </Field>
         </div>
@@ -225,7 +258,9 @@ function SubjectEditDialog({
     resolver: zodResolver(EditSubjectFormSchema),
     defaultValues: {
       name: subject.name,
-      code: subject.code ?? '',
+      lectureCoefficient: subject.lectureCoefficient ?? 0,
+      controlCoefficient: subject.controlCoefficient ?? 0,
+      practiceCoefficient: subject.practiceCoefficient ?? 0,
       directionId: subject.directionId,
       level: subject.level,
       isActive: subject.isActive,
@@ -247,7 +282,9 @@ function SubjectEditDialog({
     if (open) {
       reset({
         name: subject.name,
-        code: subject.code ?? '',
+        lectureCoefficient: subject.lectureCoefficient ?? 0,
+        controlCoefficient: subject.controlCoefficient ?? 0,
+        practiceCoefficient: subject.practiceCoefficient ?? 0,
         directionId: subject.directionId,
         level: subject.level,
         isActive: subject.isActive,
@@ -256,9 +293,8 @@ function SubjectEditDialog({
   }, [open, subject, reset]);
 
   const onSubmit = async (values: EditSubjectFormInput) => {
-    const payload = { ...values, code: values.code?.trim() || null };
     try {
-      await updateMut.mutateAsync(payload);
+      await updateMut.mutateAsync(values);
       onClose();
     } catch {
       /* hook toasts the error; keep modal open */
@@ -298,13 +334,6 @@ function SubjectEditDialog({
 
         <div className="grid grid-cols-2 gap-3">
           <Field
-            label={t('subjects.fields.code')}
-            error={errors.code?.message}
-            hint={t('subjects.fields.code_hint')}
-          >
-            <Input {...register('code')} />
-          </Field>
-          <Field
             label={t('subjects.fields.direction')}
             error={errors.directionId?.message}
           >
@@ -327,6 +356,48 @@ function SubjectEditDialog({
                   }
                 />
               )}
+            />
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <Field
+            label={t('subjects.fields.lectureCoefficient')}
+            error={errors.lectureCoefficient?.message}
+          >
+            <Input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="0.01"
+              placeholder="0"
+              {...register('lectureCoefficient', { valueAsNumber: true })}
+            />
+          </Field>
+          <Field
+            label={t('subjects.fields.controlCoefficient')}
+            error={errors.controlCoefficient?.message}
+          >
+            <Input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="0.01"
+              placeholder="0"
+              {...register('controlCoefficient', { valueAsNumber: true })}
+            />
+          </Field>
+          <Field
+            label={t('subjects.fields.practiceCoefficient')}
+            error={errors.practiceCoefficient?.message}
+          >
+            <Input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="0.01"
+              placeholder="0"
+              {...register('practiceCoefficient', { valueAsNumber: true })}
             />
           </Field>
         </div>

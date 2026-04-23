@@ -17,6 +17,7 @@ import { useAcademicYears } from '@/features/academic-years/api';
 import { useSubjects } from '@/features/subjects/api';
 import { useGroups } from '@/features/groups/api';
 import { useStreams } from '@/features/lecture-streams/api';
+import { useSubjectOfferings } from '@/features/subject-offerings/api';
 import { useCreateWorkload } from './api';
 import { LIST_PAGE_SIZE_MAX } from '@/lib/pagination';
 import { cn } from '@/lib/utils';
@@ -105,7 +106,6 @@ const TYPE_SPEC: Partial<Record<WorkloadType, TypeSpec>> = {
 const AUDITORIUM_TYPES: WorkloadType[] = [
   'lecture',
   'practice',
-  'control',
   'individual_project',
 ];
 const NON_AUDITORIUM_TYPES: WorkloadType[] = [
@@ -261,6 +261,66 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
     page: 1,
     pageSize: LIST_PAGE_SIZE_MAX,
   });
+  const { data: offeringsData } = useSubjectOfferings({
+    page: 1,
+    pageSize: LIST_PAGE_SIZE_MAX,
+  });
+
+  const selectedGroup = useMemo(() => {
+    if (!form.groupId) return null;
+    return groupsData?.items.find((g) => g.id === form.groupId) ?? null;
+  }, [groupsData?.items, form.groupId]);
+  const selectedStream = useMemo(() => {
+    if (!form.streamId) return null;
+    return streamsData?.items.find((s) => s.id === form.streamId) ?? null;
+  }, [streamsData?.items, form.streamId]);
+
+  const resolvedSubjectOfferingId = useMemo(() => {
+    // Stream-scoped rows always have an offering behind the stream.
+    if (spec?.scope === 'group_or_stream' && form.scopeKind === 'stream') {
+      return selectedStream?.subjectOffering?.id ?? null;
+    }
+    // Types without subject don't bind to offering by design.
+    if (!spec?.subject || !form.subjectId) return null;
+
+    const offerings = offeringsData?.items ?? [];
+    if (spec.scope === 'groups_multi') {
+      if (form.groupIds.length === 0) return null;
+      const off = offerings.find(
+        (o) =>
+          o.subject.id === form.subjectId &&
+          form.groupIds.every((gid) => o.groupLinks.some((gl) => gl.groupId === gid)),
+      );
+      return off?.id ?? null;
+    }
+    if (form.groupId) {
+      const off = offerings.find(
+        (o) =>
+          o.subject.id === form.subjectId &&
+          o.groupLinks.some((gl) => gl.groupId === form.groupId),
+      );
+      return off?.id ?? null;
+    }
+    // Fallback for subject-only types.
+    return offerings.find((o) => o.subject.id === form.subjectId)?.id ?? null;
+  }, [
+    spec?.scope,
+    spec?.subject,
+    form.scopeKind,
+    form.subjectId,
+    form.groupId,
+    form.groupIds,
+    selectedStream?.subjectOffering?.id,
+    offeringsData?.items,
+  ]);
+
+  useEffect(() => {
+    if (!spec?.students || !selectedGroup) return;
+    setForm((prev) => {
+      if (prev.studentCount === selectedGroup.studentCount) return prev;
+      return { ...prev, studentCount: selectedGroup.studentCount };
+    });
+  }, [spec?.students, selectedGroup]);
 
   const compute = useMemo(() => {
     if (!workloadType)
@@ -299,6 +359,7 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
   const fieldsFilled = (() => {
     if (!spec) return false;
     if (spec.subject && !form.subjectId) return false;
+    if (spec.subject && !resolvedSubjectOfferingId) return false;
     if (spec.scope === 'group' && !form.groupId) return false;
     if (spec.scope === 'group_or_stream') {
       if (form.scopeKind === 'group' && !form.groupId) return false;
@@ -326,6 +387,7 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
     try {
       await createMut.mutateAsync({
         academicYearId: effectiveYearId,
+        subjectOfferingId: resolvedSubjectOfferingId,
         workloadType,
         category: categoryOf(workloadType),
         studentCount: form.studentCount || 0,
@@ -353,6 +415,12 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
   const used = teacherUsedHours(teacher);
   const remaining = Math.max(0, teacher.annualNorm - used);
   const initials = getInitials(teacher.fullName);
+  const workloadTypeLabel = (wt: WorkloadType) =>
+    wt === 'lecture'
+      ? t('workload.assign_to_teacher.lecture_with_control', {
+          defaultValue: "Ma'ruza (Nazorat)",
+        })
+      : t(`workloadType.${wt}`);
 
   return (
     <Dialog
@@ -433,14 +501,14 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
                 label: t('workload.categories.auditorium'),
                 options: AUDITORIUM_TYPES.map((wt) => ({
                   value: wt,
-                  label: t(`workloadType.${wt}`),
+                  label: workloadTypeLabel(wt),
                 })),
               },
               {
                 label: t('workload.categories.non_auditorium'),
                 options: NON_AUDITORIUM_TYPES.map((wt) => ({
                   value: wt,
-                  label: t(`workloadType.${wt}`),
+                  label: workloadTypeLabel(wt),
                   description: requiresScientificDegree(wt)
                     ? t('workload.assign_to_teacher.phd_only_short')
                     : undefined,

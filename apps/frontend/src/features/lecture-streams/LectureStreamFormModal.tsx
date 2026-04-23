@@ -167,7 +167,10 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
           status: values.status,
         });
       } else {
-        await createMut.mutateAsync(values);
+        await createMut.mutateAsync({
+          ...values,
+          status: 'draft',
+        });
       }
       onClose();
     } catch {
@@ -229,28 +232,30 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
               )}
             />
           </Field>
-          <Field
-            label={t('streams.fields.status')}
-            error={errors.status?.message}
-          >
-            <Controller
-              name="status"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={(v) => field.onChange(v)}
-                  onBlur={field.onBlur}
-                  aria-invalid={Boolean(errors.status)}
-                  options={[
-                    { value: 'draft', label: t('status.draft') },
-                    { value: 'ready', label: t('status.ready') },
-                    { value: 'assigned', label: t('status.assigned') },
-                  ]}
-                />
-              )}
-            />
-          </Field>
+          {isEditing ? (
+            <Field
+              label={t('streams.fields.status')}
+              error={errors.status?.message}
+            >
+              <Controller
+                name="status"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={(v) => field.onChange(v)}
+                    onBlur={field.onBlur}
+                    aria-invalid={Boolean(errors.status)}
+                    options={[
+                      { value: 'draft', label: t('status.draft') },
+                      { value: 'ready', label: t('status.ready') },
+                      { value: 'assigned', label: t('status.assigned') },
+                    ]}
+                  />
+                )}
+              />
+            </Field>
+          ) : null}
         </div>
 
         <div>

@@ -195,11 +195,12 @@
     "multi_select_placeholder": "Выберите одно или несколько направлений…",
     "fields": {
       "name": "Название",
-      "code": "Код",
-      "code_hint": "Необязательный короткий код, напр. CS101",
       "direction": "Направление",
       "directions_multi": "Направления",
       "directions_multi_hint": "Отдельная запись каталога на каждое направление. Выберите хотя бы одно.",
+      "lectureCoefficient": "Коэффициент лекции",
+      "controlCoefficient": "Коэффициент контроля",
+      "practiceCoefficient": "Коэффициент практики",
       "level": "Уровень",
       "offerings": "Нагрузок",
       "isActive": "Активна"
@@ -339,6 +340,8 @@
     "stream_badge": "Поток лекций",
     "stream_students": "студентов",
     "group": "Группа",
+    "unknown_term": "Семестр не указан",
+    "unknown_term_hint": "Старая или вручную введённая нагрузка; уточните данные при необходимости.",
     "fallbacks": {
       "no_offering_detail": "Только учебный год {{year}} — нет привязки к дисциплине в этой строке"
     },

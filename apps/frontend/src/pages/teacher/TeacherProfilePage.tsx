@@ -10,7 +10,7 @@ import {
   Clock,
   Users,
 } from 'lucide-react';
-import type { WorkloadCategory, WorkloadType } from '@awdms/shared';
+import { workloadTermBucket, type WorkloadCategory, type WorkloadType } from '@awdms/shared';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageLoader } from '@/components/ui/page-loader';
 import { useTeacherProfile } from '@/features/teacher-profile/api';
@@ -45,9 +45,8 @@ const WORKLOAD_TYPES: WorkloadType[] = [
   'scientific_internship',
 ];
 
-type TermFilter = 'all' | 'fall' | 'spring';
-
 type CategoryFilter = 'all' | WorkloadCategory;
+const HOURS_DECIMALS = 1;
 
 export function TeacherProfilePage() {
   const { t } = useTranslation();
@@ -59,7 +58,6 @@ export function TeacherProfilePage() {
   } = useTeacherProfile();
 
   const [yearId, setYearId] = useState<string>('');
-  const [termFilter, setTermFilter] = useState<TermFilter>('all');
   const [typeFilter, setTypeFilter] = useState<WorkloadType | ''>('');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [assignOpen, setAssignOpen] = useState(false);
@@ -76,14 +74,23 @@ export function TeacherProfilePage() {
 
   const filteredItems = useMemo(() => {
     return items.filter((i) => {
-      if (termFilter !== 'all') {
-        if (i.subjectOffering?.academicTerm !== termFilter) return false;
-      }
       if (typeFilter && i.workloadType !== typeFilter) return false;
       if (categoryFilter !== 'all' && i.category !== categoryFilter) return false;
       return true;
     });
-  }, [items, termFilter, typeFilter, categoryFilter]);
+  }, [items, typeFilter, categoryFilter]);
+  const fallItems = useMemo(
+    () => filteredItems.filter((i) => workloadTermBucket(i) === 'fall'),
+    [filteredItems],
+  );
+  const springItems = useMemo(
+    () => filteredItems.filter((i) => workloadTermBucket(i) === 'spring'),
+    [filteredItems],
+  );
+  const unknownTermItems = useMemo(
+    () => filteredItems.filter((i) => workloadTermBucket(i) === 'unknown'),
+    [filteredItems],
+  );
 
   const filteredTotals = useMemo(() => {
     const totalHours = filteredItems.reduce((n, i) => n + i.plannedHours, 0);
@@ -169,6 +176,10 @@ export function TeacherProfilePage() {
             label={t('teachers.fields.annualNorm')}
             value={`${annualNorm} h`}
           />
+          <Field
+            label={t('teacher_profile.kpi.total_hours')}
+            value={`${items.reduce((n, i) => n + i.plannedHours, 0).toFixed(HOURS_DECIMALS)}h`}
+          />
           <div>
             <div className="text-[10px] font-medium uppercase tracking-wide text-zinc-500">
               {t('teachers.fields.hasScientificDegree')}
@@ -235,140 +246,72 @@ export function TeacherProfilePage() {
           <CardTitle className="text-base">{t('teacher_profile.workload_section')}</CardTitle>
         </CardHeader>
         <DataTable
-        isLoading={wlLoading}
-        empty={filteredItems.length === 0 ? t('my_workload.empty') : undefined}
-        toolbar={
-          <div className="flex w-full flex-wrap items-center gap-2">
-            <Select
-              className="w-40"
-              value={termFilter}
-              onValueChange={(v) => setTermFilter((v as TermFilter) ?? 'all')}
-              options={[
-                { value: 'all', label: t('my_workload.all_terms') },
-                { value: 'fall', label: t('academicTerm.fall') },
-                { value: 'spring', label: t('academicTerm.spring') },
-              ]}
-            />
-            <Select
-              className="w-48"
-              value={typeFilter}
-              onValueChange={(v) => setTypeFilter((v as WorkloadType) || '')}
-              clearable
-              placeholder={t('teacher_profile.filter_type')}
-              options={WORKLOAD_TYPES.map((wt) => ({
-                value: wt,
-                label: t(`workloadType.${wt}`),
-              }))}
-            />
-            <Select
-              className="w-44"
-              value={categoryFilter}
-              onValueChange={(v) =>
-                setCategoryFilter(
-                  v === 'all' ? 'all' : (v as WorkloadCategory),
-                )
-              }
-              options={[
-                { value: 'all', label: t('teacher_profile.all_categories') },
-                {
-                  value: 'auditorium',
-                  label: t('workload.category.auditorium'),
-                },
-                {
-                  value: 'non_auditorium',
-                  label: t('workload.category.non_auditorium'),
-                },
-              ]}
-            />
-            <div className="ml-auto flex flex-wrap items-center gap-2">
-              <Button variant="primary" onClick={() => setAssignOpen(true)}>
-                <UserPlus className="h-4 w-4" aria-hidden="true" />
-                <span>{t('teacher_profile.assign_workload')}</span>
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={onExport}
-                disabled={!effectiveYearId}
-              >
-                <Download className="h-4 w-4" aria-hidden="true" />
-                <span>{t('common.export_excel')}</span>
-              </Button>
+          isLoading={wlLoading}
+          toolbar={
+            <div className="flex w-full flex-wrap items-center gap-2">
               <Select
-                className="w-40"
-                value={yearId || effectiveYearId}
-                onValueChange={(v) => setYearId(v ?? '')}
-                options={
-                  years?.map((y) => ({
-                    value: y.id,
-                    label: y.isActive ? `★ ${y.name}` : y.name,
-                  })) ?? []
-                }
+                className="w-48"
+                value={typeFilter}
+                onValueChange={(v) => setTypeFilter((v as WorkloadType) || '')}
+                clearable
+                placeholder={t('teacher_profile.filter_type')}
+                options={WORKLOAD_TYPES.map((wt) => ({
+                  value: wt,
+                  label: t(`workloadType.${wt}`),
+                }))}
               />
+              <Select
+                className="w-44"
+                value={categoryFilter}
+                onValueChange={(v) =>
+                  setCategoryFilter(v === 'all' ? 'all' : (v as WorkloadCategory))
+                }
+                options={[
+                  { value: 'all', label: t('teacher_profile.all_categories') },
+                  { value: 'auditorium', label: t('workload.category.auditorium') },
+                  { value: 'non_auditorium', label: t('workload.category.non_auditorium') },
+                ]}
+              />
+              <div className="ml-auto flex flex-wrap items-center gap-2">
+                <Button variant="primary" onClick={() => setAssignOpen(true)}>
+                  <UserPlus className="h-4 w-4" aria-hidden="true" />
+                  <span>{t('teacher_profile.assign_workload')}</span>
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={onExport}
+                  disabled={!effectiveYearId}
+                >
+                  <Download className="h-4 w-4" aria-hidden="true" />
+                  <span>{t('common.export_excel')}</span>
+                </Button>
+                <Select
+                  className="w-40"
+                  value={yearId || effectiveYearId}
+                  onValueChange={(v) => setYearId(v ?? '')}
+                  options={
+                    years?.map((y) => ({
+                      value: y.id,
+                      label: y.isActive ? `★ ${y.name}` : y.name,
+                    })) ?? []
+                  }
+                />
+              </div>
             </div>
-          </div>
-        }
-      >
-        <thead>
-          <tr>
-            <Th>{t('workload.fields.type')}</Th>
-            <Th>{t('workload.fields.subject')}</Th>
-            <Th>{t('workload.fields.group_or_stream')}</Th>
-            <Th className="text-right">{t('workload.fields.students')}</Th>
-            <Th className="text-right">{t('workload.fields.coefficient')}</Th>
-            <Th className="text-right">{t('workload.fields.hours')}</Th>
-            <Th>{t('workload.fields.category_col')}</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredItems.map((i) => (
-            <tr key={i.id} className="hover:bg-zinc-50">
-              <Td>
-                <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs font-medium text-zinc-700">
-                  {t(`workloadType.${i.workloadType as WorkloadType}`)}
-                </span>
-              </Td>
-              <Td className="font-medium text-zinc-900">
-                {i.subjectOffering?.subject.name ?? '—'}
-                {i.subjectOffering ? (
-                  <div className="text-[10px] font-normal text-zinc-500">
-                    {[i.subjectOffering.subject.code, `Y${i.subjectOffering.courseYear}`, `S${i.subjectOffering.semesterNumber}`, i.subjectOffering.academicTerm === 'fall' ? t('academicTerm.fall') : t('academicTerm.spring')]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </div>
-                ) : null}
-              </Td>
-              <Td className="text-xs text-zinc-700">
-                {i.group
-                  ? i.group.name
-                  : i.lectureStream
-                    ? `${t('workload.stream_badge')} · ${
-                        i.lectureStream.totalStudentCount
-                      } ${t('workload.stream_students')}`
-                    : '—'}
-              </Td>
-              <Td className="text-right tabular-nums">
-                <span className="inline-flex items-center justify-end gap-1">
-                  <Users className="h-3 w-3 text-zinc-400" aria-hidden="true" />
-                  {i.studentCount}
-                </span>
-              </Td>
-              <Td className="text-right font-mono text-xs tabular-nums text-zinc-800">
-                {formatPrimaryCoefficient(i.formulaConfig)}
-              </Td>
-              <Td className="text-right tabular-nums font-medium">
-                <span className="inline-flex items-center justify-end gap-1">
-                  <Clock className="h-3 w-3 text-zinc-400" aria-hidden="true" />
-                  {i.plannedHours.toFixed(1)}
-                </span>
-              </Td>
-              <Td className="text-sm text-zinc-700">
-                {t(`workload.category.${i.category}`)}
-              </Td>
-            </tr>
-          ))}
-        </tbody>
-      </DataTable>
+          }
+        />
       </Card>
+
+      <TermSection title={t('academicTerm.fall')} items={fallItems} isLoading={wlLoading} />
+      <TermSection title={t('academicTerm.spring')} items={springItems} isLoading={wlLoading} />
+      {unknownTermItems.length > 0 ? (
+        <TermSection
+          title={t('workload.unknown_term')}
+          hint={t('workload.unknown_term_hint')}
+          items={unknownTermItems}
+          isLoading={wlLoading}
+        />
+      ) : null}
 
       <p className="text-center text-xs text-zinc-500">
         <Link
@@ -395,6 +338,108 @@ export function TeacherProfilePage() {
         </p>
       </Dialog>
     </div>
+  );
+}
+
+function TermSection({
+  title,
+  hint,
+  items,
+  isLoading,
+}: {
+  title: string;
+  hint?: string;
+  items: NonNullable<ReturnType<typeof useMyWorkload>['data']>['items'];
+  isLoading: boolean;
+}) {
+  const { t } = useTranslation();
+  const termHours = items.reduce((sum, item) => sum + item.plannedHours, 0);
+  return (
+    <Card>
+      <CardHeader className="border-b border-zinc-100">
+        <div>
+          <CardTitle className="text-base">{title}</CardTitle>
+          {hint ? (
+            <p className="mt-1.5 text-xs leading-snug text-zinc-500">{hint}</p>
+          ) : null}
+        </div>
+      </CardHeader>
+      <DataTable
+        isLoading={isLoading}
+        empty={items.length === 0 ? t('my_workload.empty') : undefined}
+      >
+        <thead>
+          <tr>
+            <Th>{t('workload.fields.type')}</Th>
+            <Th>{t('workload.fields.subject')}</Th>
+            <Th>{t('workload.fields.group_or_stream')}</Th>
+            <Th className="text-right">{t('workload.fields.students')}</Th>
+            <Th className="text-right">{t('workload.fields.coefficient')}</Th>
+            <Th className="text-right">{t('workload.fields.hours')}</Th>
+            <Th>{t('workload.fields.category_col')}</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((i) => (
+            <tr key={i.id} className="hover:bg-zinc-50">
+              <Td>
+                <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs font-medium text-zinc-700">
+                  {t(`workloadType.${i.workloadType as WorkloadType}`)}
+                </span>
+              </Td>
+              <Td className="font-medium text-zinc-900">
+                {i.subjectOffering?.subject.name ?? '—'}
+                {i.subjectOffering ? (
+                  <div className="text-[10px] font-normal text-zinc-500">
+                    {[`Y${i.subjectOffering.courseYear}`, `S${i.subjectOffering.semesterNumber}`]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </div>
+                ) : null}
+              </Td>
+              <Td className="text-xs text-zinc-700">
+                {i.group
+                  ? i.group.name
+                  : i.lectureStream
+                    ? `${t('workload.stream_badge')} · ${
+                        i.lectureStream.totalStudentCount
+                      } ${t('workload.stream_students')}`
+                    : '—'}
+              </Td>
+              <Td className="text-right tabular-nums">
+                <span className="inline-flex items-center justify-end gap-1">
+                  <Users className="h-3 w-3 text-zinc-400" aria-hidden="true" />
+                  {i.studentCount}
+                </span>
+              </Td>
+              <Td className="text-right font-mono text-xs tabular-nums text-zinc-800">
+                {formatPrimaryCoefficient(i.formulaConfig)}
+              </Td>
+              <Td className="text-right tabular-nums font-medium">
+                <span className="inline-flex items-center justify-end gap-1">
+                  <Clock className="h-3 w-3 text-zinc-400" aria-hidden="true" />
+                  {i.plannedHours.toFixed(HOURS_DECIMALS)}
+                </span>
+              </Td>
+              <Td className="text-sm text-zinc-700">
+                {t(`workload.category.${i.category}`)}
+              </Td>
+            </tr>
+          ))}
+          {items.length > 0 ? (
+            <tr className="bg-zinc-50">
+              <Td colSpan={5} className="text-right text-xs font-semibold text-zinc-600">
+                {t('common.total', { defaultValue: 'Jami' })}
+              </Td>
+              <Td className="text-right tabular-nums text-sm font-semibold text-zinc-900">
+                {termHours.toFixed(HOURS_DECIMALS)}h
+              </Td>
+              <Td />
+            </tr>
+          ) : null}
+        </tbody>
+      </DataTable>
+    </Card>
   );
 }
 

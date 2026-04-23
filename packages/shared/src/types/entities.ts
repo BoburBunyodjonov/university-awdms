@@ -83,6 +83,9 @@ export interface Subject {
   id: string;
   name: string;
   code: string | null;
+  lectureCoefficient: number;
+  controlCoefficient: number;
+  practiceCoefficient: number;
   directionId: string;
   level: StudyLevel;
   isActive: boolean;

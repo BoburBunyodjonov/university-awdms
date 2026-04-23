@@ -9,6 +9,7 @@ import {
   categoryOf,
   isIndivisibleAuditoriumWorkload,
   requiresScientificDegree,
+  workloadTermBucket,
   type FormulaScope,
   type WorkloadType,
 } from '@awdms/shared';
@@ -49,6 +50,9 @@ const include = {
           id: true,
           name: true,
           code: true,
+          lectureCoefficient: true,
+          controlCoefficient: true,
+          practiceCoefficient: true,
           level: true,
           direction: { select: { id: true, name: true, code: true } },
         },
@@ -278,7 +282,15 @@ export class WorkloadService {
         : { isActive: true },
       include: {
         subject: {
-          select: { id: true, name: true, level: true, directionId: true },
+          select: {
+            id: true,
+            name: true,
+            level: true,
+            directionId: true,
+            lectureCoefficient: true,
+            controlCoefficient: true,
+            practiceCoefficient: true,
+          },
         },
         lectureStreams: {
           include: {
@@ -307,6 +319,10 @@ export class WorkloadService {
       const level = offering.subject.level;
       const studyType = offering.studyType;
 
+      const lectureCoeff = offering.subject.lectureCoefficient ?? 0;
+      const controlCoeff = offering.subject.controlCoefficient ?? 0;
+      const practiceCoeff = offering.subject.practiceCoefficient ?? 0;
+
       // lecture + control per stream
       for (const stream of offering.lectureStreams) {
         for (const wtype of ['lecture', 'control'] as const) {
@@ -324,14 +340,19 @@ export class WorkloadService {
             continue;
           }
           const streamGroupCount = Math.max(1, stream.groupLinks.length);
-          const planned = await this.computePlannedHours({
-            workloadType: wtype,
-            studentCount: stream.totalStudentCount,
-            groupCount: streamGroupCount,
-            level,
-            studyType,
-            formulaConfigId: null,
-          });
+          const coeff = wtype === 'lecture' ? lectureCoeff : controlCoeff;
+          const coeffHours = stream.totalStudentCount * coeff;
+          const planned =
+            coeff > 0
+              ? { hours: coeffHours, formulaId: null as string | null }
+              : await this.computePlannedHours({
+                  workloadType: wtype,
+                  studentCount: stream.totalStudentCount,
+                  groupCount: streamGroupCount,
+                  level,
+                  studyType,
+                  formulaConfigId: null,
+                });
           const created = await this.prisma.workloadItem.create({
             data: {
               academicYearId: year.id,
@@ -376,14 +397,18 @@ export class WorkloadService {
           skipped.push(existing.id);
           continue;
         }
-        const planned = await this.computePlannedHours({
-          workloadType: 'practice',
-          studentCount: gl.group.studentCount,
-          groupCount: 1,
-          level,
-          studyType,
-          formulaConfigId: null,
-        });
+        const coeffHours = gl.group.studentCount * practiceCoeff;
+        const planned =
+          practiceCoeff > 0
+            ? { hours: coeffHours, formulaId: null as string | null }
+            : await this.computePlannedHours({
+                workloadType: 'practice',
+                studentCount: gl.group.studentCount,
+                groupCount: 1,
+                level,
+                studyType,
+                formulaConfigId: null,
+              });
         const created = await this.prisma.workloadItem.create({
           data: {
             academicYearId: year.id,
@@ -519,7 +544,7 @@ export class WorkloadService {
   }
 
   /**
-   * §4.10 Teacher dashboard data: total hours, fall/spring breakdown,
+   * §4.10 Teacher dashboard data: total hours, fall/spring/unknown term breakdown,
    * auditorium vs non-auditorium, and the raw items.
    */
   async teacherSummary(teacherId: string, academicYearId?: string) {
@@ -564,8 +589,9 @@ export class WorkloadService {
         items: items.length,
       },
       byTerm: {
-        fall: sumHours((i) => i.subjectOffering?.academicTerm === 'fall'),
-        spring: sumHours((i) => i.subjectOffering?.academicTerm === 'spring'),
+        fall: sumHours((i) => workloadTermBucket(i) === 'fall'),
+        spring: sumHours((i) => workloadTermBucket(i) === 'spring'),
+        unknown: sumHours((i) => workloadTermBucket(i) === 'unknown'),
       },
       items,
     };

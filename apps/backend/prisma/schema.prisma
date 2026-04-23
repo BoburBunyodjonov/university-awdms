@@ -226,6 +226,9 @@ model Subject {
   id          String     @id @default(uuid()) @db.Uuid
   name        String
   code        String?
+  lectureCoefficient Float @default(0)
+  controlCoefficient Float @default(0)
+  practiceCoefficient Float @default(0)
   directionId String     @db.Uuid
   direction   Direction  @relation(fields: [directionId], references: [id], onDelete: Restrict)
   level       StudyLevel

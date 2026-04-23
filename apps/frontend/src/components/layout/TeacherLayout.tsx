@@ -32,8 +32,8 @@ export function TeacherLayout() {
 
   return (
     <RoleGuard allow={['teacher', 'admin']}>
-      <div className="flex min-h-screen flex-col bg-zinc-50">
-        <header className="flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-4">
+      <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-zinc-50">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4">
           <Link to="/teacher" className="text-sm font-semibold text-zinc-900">
             {t('app_name')}
           </Link>
@@ -70,7 +70,7 @@ export function TeacherLayout() {
             </Button>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 p-4">
+        <main className="mx-auto w-full min-h-0 max-w-6xl flex-1 overflow-y-auto overscroll-y-contain p-4 [scrollbar-gutter:stable]">
           <Outlet />
         </main>
       </div>

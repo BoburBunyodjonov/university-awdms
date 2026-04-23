@@ -51,15 +51,18 @@ export function AdminLayout() {
 
   return (
     <RoleGuard allow={ADMIN_ROLES}>
-      <div className="flex min-h-screen bg-zinc-50">
-        <aside className="flex w-60 shrink-0 flex-col border-r border-zinc-200 bg-white">
+      <div className="flex h-full min-h-0 w-full flex-1 flex-row overflow-hidden bg-zinc-50">
+        <aside className="flex h-full min-h-0 w-60 shrink-0 flex-col border-r border-zinc-200 bg-white">
           <Link
             to="/admin"
-            className="flex h-14 items-center border-b border-zinc-200 px-4 text-sm font-semibold text-zinc-900"
+            className="flex h-14 shrink-0 items-center border-b border-zinc-200 px-4 text-sm font-semibold text-zinc-900"
           >
             {t('app_name')}
           </Link>
-          <nav className="flex-1 overflow-y-auto p-2" aria-label="Admin">
+          <nav
+            className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-2"
+            aria-label="Admin"
+          >
             <ul className="space-y-0.5">
               {NAV.map((item) => (
                 <li key={item.to}>
@@ -84,8 +87,8 @@ export function AdminLayout() {
           </nav>
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-4">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <header className="flex h-14 shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4">
             <div className="text-sm text-zinc-500">Admin</div>
             <div className="flex items-center gap-3">
               <LanguageSwitcher />
@@ -100,7 +103,7 @@ export function AdminLayout() {
               </Button>
             </div>
           </header>
-          <main className="flex-1 overflow-auto p-4">
+          <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-4 [scrollbar-gutter:stable]">
             <Outlet />
           </main>
         </div>

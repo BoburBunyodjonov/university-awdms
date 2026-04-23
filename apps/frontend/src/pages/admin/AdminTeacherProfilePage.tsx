@@ -10,7 +10,7 @@ import {
   Plus,
   Users,
 } from 'lucide-react';
-import type { Teacher, WorkloadType } from '@awdms/shared';
+import { workloadTermBucket, type Teacher, type WorkloadType } from '@awdms/shared';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable, Td, Th } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import { useTeacherWorkload, useTeachers } from '@/features/teachers/api';
 import { useAcademicYears } from '@/features/academic-years/api';
 import { LIST_PAGE_SIZE_MAX } from '@/lib/pagination';
 import { AssignWorkloadToTeacherModal } from '@/features/workload/AssignWorkloadToTeacherModal';
+import type { WorkloadItemWithRelations } from '@/features/workload/api';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -44,7 +45,7 @@ const WORKLOAD_TYPES: WorkloadType[] = [
   'scientific_internship',
 ];
 
-type TermFilter = 'all' | 'fall' | 'spring';
+const HOURS_DECIMALS = 1;
 
 /**
  * Admin: view any teacher’s workload (GET /teachers/:id/workload) + Excel export
@@ -55,7 +56,6 @@ export function AdminTeacherProfilePage() {
   const { id: teacherId } = useParams<{ id: string }>();
   const { data: years } = useAcademicYears();
   const [yearId, setYearId] = useState<string>('');
-  const [termFilter, setTermFilter] = useState<TermFilter>('all');
   const [typeFilter, setTypeFilter] = useState<WorkloadType | ''>('');
   const [assignOpen, setAssignOpen] = useState(false);
 
@@ -76,15 +76,26 @@ export function AdminTeacherProfilePage() {
 
   const items = data?.assignedWorkloads ?? data?.items ?? [];
 
-  const filteredItems = useMemo(() => {
-    return items.filter((i) => {
-      if (termFilter !== 'all') {
-        if (i.subjectOffering?.academicTerm !== termFilter) return false;
-      }
-      if (typeFilter && i.workloadType !== typeFilter) return false;
-      return true;
-    });
-  }, [items, termFilter, typeFilter]);
+  const filteredItems = useMemo(
+    () => items.filter((i) => (typeFilter ? i.workloadType === typeFilter : true)),
+    [items, typeFilter],
+  );
+  const fallItems = useMemo(
+    () => filteredItems.filter((i) => workloadTermBucket(i) === 'fall'),
+    [filteredItems],
+  );
+  const springItems = useMemo(
+    () => filteredItems.filter((i) => workloadTermBucket(i) === 'spring'),
+    [filteredItems],
+  );
+  const unknownTermItems = useMemo(
+    () => filteredItems.filter((i) => workloadTermBucket(i) === 'unknown'),
+    [filteredItems],
+  );
+  const totalCollectedHours = useMemo(
+    () => items.reduce((sum, item) => sum + item.plannedHours, 0),
+    [items],
+  );
 
   const filteredTotals = useMemo(() => {
     const totalHours = filteredItems.reduce((n, i) => n + i.plannedHours, 0);
@@ -168,6 +179,9 @@ export function AdminTeacherProfilePage() {
                 {t('teachers.degree_badge')}
               </span>
             ) : null}
+            <span className="ml-2 font-semibold text-zinc-800">
+              · {t('teacher_profile.kpi.total_hours')}: {totalCollectedHours.toFixed(HOURS_DECIMALS)}h
+            </span>
           </p>
         ) : null}
       </div>
@@ -175,16 +189,6 @@ export function AdminTeacherProfilePage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div />
         <div className="flex flex-wrap items-center gap-2">
-          <Select
-            className="w-40"
-            value={termFilter}
-            onValueChange={(v) => setTermFilter((v as TermFilter) ?? 'all')}
-            options={[
-              { value: 'all', label: t('my_workload.all_terms') },
-              { value: 'fall', label: t('academicTerm.fall') },
-              { value: 'spring', label: t('academicTerm.spring') },
-            ]}
-          />
           <Select
             className="w-44"
             value={typeFilter}
@@ -246,15 +250,26 @@ export function AdminTeacherProfilePage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div
+        className={cn(
+          'grid grid-cols-1 gap-3',
+          unknownTermItems.length > 0 ? 'md:grid-cols-3' : 'md:grid-cols-2',
+        )}
+      >
         <Kpi
           label={t('my_workload.fall')}
-          value={data ? `${data.byTerm.fall.toFixed(1)}h` : '—'}
+          value={`${fallItems.reduce((n, i) => n + i.plannedHours, 0).toFixed(HOURS_DECIMALS)}h`}
         />
         <Kpi
           label={t('my_workload.spring')}
-          value={data ? `${data.byTerm.spring.toFixed(1)}h` : '—'}
+          value={`${springItems.reduce((n, i) => n + i.plannedHours, 0).toFixed(HOURS_DECIMALS)}h`}
         />
+        {unknownTermItems.length > 0 ? (
+          <Kpi
+            label={t('workload.unknown_term')}
+            value={`${unknownTermItems.reduce((n, i) => n + i.plannedHours, 0).toFixed(HOURS_DECIMALS)}h`}
+          />
+        ) : null}
       </div>
 
       <Card>
@@ -265,81 +280,30 @@ export function AdminTeacherProfilePage() {
           </CardTitle>
           <span className="text-xs text-zinc-500">
             {filteredTotals.count} {t('my_workload.items')}
-            {termFilter !== 'all' || typeFilter ? ` (${t('common.filter')})` : ''}
+            {typeFilter ? ` (${t('common.filter')})` : ''}
           </span>
         </CardHeader>
 
-        <DataTable
-          isLoading={isLoading}
-          empty={filteredItems.length === 0 ? t('my_workload.empty') : undefined}
-        >
-          <thead>
-            <tr>
-              <Th>{t('workload.fields.type')}</Th>
-              <Th>{t('workload.fields.subject')}</Th>
-              <Th>{t('workload.group')}</Th>
-              <Th className="text-right">{t('workload.fields.students')}</Th>
-              <Th className="text-right">{t('workload.fields.hours')}</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredItems.map((i) => (
-              <tr key={i.id} className="hover:bg-zinc-50">
-                <Td>
-                  <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs font-medium text-zinc-700">
-                    {t(`workloadType.${i.workloadType as WorkloadType}`)}
-                  </span>
-                </Td>
-                <Td className="font-medium text-zinc-900">
-                  {i.subjectOffering?.subject.name ||
-                    i.academicYear?.name ||
-                    '—'}
-                  <div className="text-[10px] font-normal text-zinc-500">
-                    {i.subjectOffering ? (
-                      <>
-                        {[i.subjectOffering.subject.code, `Y${i.subjectOffering.courseYear}`, `S${i.subjectOffering.semesterNumber}`]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </>
-                    ) : i.academicYear ? (
-                      t('workload.fallbacks.no_offering_detail', {
-                        year: i.academicYear.name,
-                      })
-                    ) : null}
-                  </div>
-                </Td>
-                <Td className="text-xs text-zinc-700">
-                  {i.group
-                    ? i.group.name
-                    : i.lectureStream
-                      ? `${t('workload.stream_badge')} · ${i.lectureStream.language} · ${
-                          i.lectureStream.totalStudentCount
-                        } ${t('workload.stream_students')}`
-                      : '—'}
-                </Td>
-                <Td className="text-right tabular-nums">
-                  <span className="inline-flex items-center gap-1">
-                    <Users
-                      className="h-3 w-3 text-zinc-400"
-                      aria-hidden="true"
-                    />
-                    {i.studentCount}
-                  </span>
-                </Td>
-                <Td className="text-right tabular-nums font-medium">
-                  <span className="inline-flex items-center gap-1">
-                    <Clock
-                      className="h-3 w-3 text-zinc-400"
-                      aria-hidden="true"
-                    />
-                    {i.plannedHours.toFixed(1)}
-                  </span>
-                </Td>
-              </tr>
-            ))}
-          </tbody>
-        </DataTable>
       </Card>
+
+      <TermWorkloadTable
+        title={t('academicTerm.fall')}
+        items={fallItems}
+        isLoading={isLoading}
+      />
+      <TermWorkloadTable
+        title={t('academicTerm.spring')}
+        items={springItems}
+        isLoading={isLoading}
+      />
+      {unknownTermItems.length > 0 ? (
+        <TermWorkloadTable
+          title={t('workload.unknown_term')}
+          hint={t('workload.unknown_term_hint')}
+          items={unknownTermItems}
+          isLoading={isLoading}
+        />
+      ) : null}
 
       <AssignWorkloadToTeacherModal
         open={assignOpen}
@@ -347,6 +311,99 @@ export function AdminTeacherProfilePage() {
         teacher={teacherFull}
       />
     </div>
+  );
+}
+
+function TermWorkloadTable({
+  title,
+  hint,
+  items,
+  isLoading,
+}: {
+  title: string;
+  hint?: string;
+  items: WorkloadItemWithRelations[];
+  isLoading: boolean;
+}) {
+  const { t } = useTranslation();
+  const termHours = items.reduce((sum, item) => sum + item.plannedHours, 0);
+  return (
+    <Card>
+      <CardHeader>
+        <div>
+          <CardTitle className="text-base">{title}</CardTitle>
+          {hint ? (
+            <p className="mt-1.5 text-xs leading-snug text-zinc-500">{hint}</p>
+          ) : null}
+        </div>
+      </CardHeader>
+      <DataTable
+        isLoading={isLoading}
+        empty={items.length === 0 ? t('my_workload.empty') : undefined}
+      >
+        <thead>
+          <tr>
+            <Th>{t('workload.fields.type')}</Th>
+            <Th>{t('workload.fields.subject')}</Th>
+            <Th>{t('workload.group')}</Th>
+            <Th className="text-right">{t('workload.fields.students')}</Th>
+            <Th className="text-right">{t('workload.fields.hours')}</Th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((i) => (
+            <tr key={i.id} className="hover:bg-zinc-50">
+              <Td>
+                <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs font-medium text-zinc-700">
+                  {t(`workloadType.${i.workloadType as WorkloadType}`)}
+                </span>
+              </Td>
+              <Td className="font-medium text-zinc-900">
+                {i.subjectOffering?.subject.name ?? '—'}
+                {i.subjectOffering ? (
+                  <div className="text-[10px] font-normal text-zinc-500">
+                    {[`Y${i.subjectOffering.courseYear}`, `S${i.subjectOffering.semesterNumber}`]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </div>
+                ) : null}
+              </Td>
+              <Td className="text-xs text-zinc-700">
+                {i.group
+                  ? i.group.name
+                  : i.lectureStream
+                    ? `${t('workload.stream_badge')} · ${i.lectureStream.language} · ${
+                        i.lectureStream.totalStudentCount
+                      } ${t('workload.stream_students')}`
+                    : '—'}
+              </Td>
+              <Td className="text-right tabular-nums">
+                <span className="inline-flex items-center gap-1">
+                  <Users className="h-3 w-3 text-zinc-400" aria-hidden="true" />
+                  {i.studentCount}
+                </span>
+              </Td>
+              <Td className="text-right tabular-nums font-medium">
+                <span className="inline-flex items-center gap-1">
+                  <Clock className="h-3 w-3 text-zinc-400" aria-hidden="true" />
+                  {i.plannedHours.toFixed(HOURS_DECIMALS)}
+                </span>
+              </Td>
+            </tr>
+          ))}
+          {items.length > 0 ? (
+            <tr className="bg-zinc-50">
+              <Td colSpan={4} className="text-right text-xs font-semibold text-zinc-600">
+                {t('common.total', { defaultValue: 'Jami' })}
+              </Td>
+              <Td className="text-right tabular-nums text-sm font-semibold text-zinc-900">
+                {termHours.toFixed(HOURS_DECIMALS)}h
+              </Td>
+            </tr>
+          ) : null}
+        </tbody>
+      </DataTable>
+    </Card>
   );
 }
 

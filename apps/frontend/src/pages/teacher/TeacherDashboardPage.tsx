@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Award, BookOpen, Clock, Download, Users } from 'lucide-react';
-import type { WorkloadType } from '@awdms/shared';
+import { workloadTermBucket, type WorkloadType } from '@awdms/shared';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable, Td, Th } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,7 @@ const WORKLOAD_TYPES: WorkloadType[] = [
   'scientific_internship',
 ];
 
-type TermFilter = 'all' | 'fall' | 'spring';
+type TermFilter = 'all' | 'fall' | 'spring' | 'unknown';
 
 export function TeacherDashboardPage() {
   const { t } = useTranslation();
@@ -51,8 +51,8 @@ export function TeacherDashboardPage() {
 
   const filteredItems = useMemo(() => {
     return items.filter((i) => {
-      if (termFilter !== 'all') {
-        if (i.subjectOffering?.academicTerm !== termFilter) return false;
+      if (termFilter !== 'all' && workloadTermBucket(i) !== termFilter) {
+        return false;
       }
       if (typeFilter && i.workloadType !== typeFilter) return false;
       return true;
@@ -136,6 +136,7 @@ export function TeacherDashboardPage() {
               { value: 'all', label: t('my_workload.all_terms') },
               { value: 'fall', label: t('academicTerm.fall') },
               { value: 'spring', label: t('academicTerm.spring') },
+              { value: 'unknown', label: t('workload.unknown_term') },
             ]}
           />
           <Select
@@ -195,7 +196,12 @@ export function TeacherDashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div
+        className={cn(
+          'grid grid-cols-1 gap-3',
+          data && data.byTerm.unknown > 0 ? 'md:grid-cols-3' : 'md:grid-cols-2',
+        )}
+      >
         <Kpi
           label={t('my_workload.fall')}
           value={data ? `${data.byTerm.fall.toFixed(1)}h` : '—'}
@@ -204,6 +210,12 @@ export function TeacherDashboardPage() {
           label={t('my_workload.spring')}
           value={data ? `${data.byTerm.spring.toFixed(1)}h` : '—'}
         />
+        {data && data.byTerm.unknown > 0 ? (
+          <Kpi
+            label={t('workload.unknown_term')}
+            value={`${data.byTerm.unknown.toFixed(1)}h`}
+          />
+        ) : null}
       </div>
 
       <Card>

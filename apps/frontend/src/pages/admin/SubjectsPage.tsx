@@ -147,7 +147,6 @@ export function SubjectsPage() {
         <thead>
           <tr>
             <Th>{t('subjects.fields.name')}</Th>
-            <Th>{t('subjects.fields.code')}</Th>
             <Th>{t('subjects.fields.direction')}</Th>
             <Th>{t('subjects.fields.level')}</Th>
             <Th className="text-right">{t('subjects.fields.offerings')}</Th>
@@ -158,9 +157,6 @@ export function SubjectsPage() {
           {data?.items.map((s) => (
             <tr key={s.id} className="hover:bg-zinc-50">
               <Td className="font-medium text-zinc-900">{s.name}</Td>
-              <Td className="font-mono text-xs text-zinc-700">
-                {s.code ?? '—'}
-              </Td>
               <Td className="text-zinc-700">
                 <span className="font-mono text-xs text-zinc-500">
                   {s.direction.code}

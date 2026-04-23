@@ -4,8 +4,10 @@ import { AcademicTermEnum, StudyLevelEnum, StudyTypeEnum } from './enums';
 // Subject catalog — one row per (direction, name) unique. Create can batch several directions.
 export const CreateSubjectSchema = z.object({
   name: z.string().min(1).max(200),
-  code: z.string().trim().max(50).nullable().optional(),
   directionIds: z.array(z.string().uuid()).min(1).max(64),
+  lectureCoefficient: z.number().min(0).default(0),
+  controlCoefficient: z.number().min(0).default(0),
+  practiceCoefficient: z.number().min(0).default(0),
   level: StudyLevelEnum,
   isActive: z.boolean().default(true),
 });
@@ -13,7 +15,9 @@ export type CreateSubjectInput = z.infer<typeof CreateSubjectSchema>;
 
 export const UpdateSubjectSchema = z.object({
   name: z.string().min(1).max(200).optional(),
-  code: z.string().trim().max(50).nullable().optional(),
+  lectureCoefficient: z.number().min(0).optional(),
+  controlCoefficient: z.number().min(0).optional(),
+  practiceCoefficient: z.number().min(0).optional(),
   directionId: z.string().uuid().optional(),
   level: StudyLevelEnum.optional(),
   isActive: z.boolean().optional(),
@@ -23,7 +27,9 @@ export type UpdateSubjectInput = z.infer<typeof UpdateSubjectSchema>;
 /** Full form values for subject edit (admin modal). */
 export const EditSubjectFormSchema = z.object({
   name: z.string().min(1).max(200),
-  code: z.string().trim().max(50).nullable().optional(),
+  lectureCoefficient: z.number().min(0).default(0),
+  controlCoefficient: z.number().min(0).default(0),
+  practiceCoefficient: z.number().min(0).default(0),
   directionId: z.string().uuid(),
   level: StudyLevelEnum,
   isActive: z.boolean(),

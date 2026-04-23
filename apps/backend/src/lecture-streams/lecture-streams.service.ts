@@ -26,6 +26,8 @@ const include = {
           id: true,
           name: true,
           code: true,
+          lectureCoefficient: true,
+          controlCoefficient: true,
           level: true,
           directionId: true,
           direction: { select: { id: true, name: true, code: true } },
@@ -59,6 +61,17 @@ const include = {
 @Injectable()
 export class LectureStreamsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /** Avoid NaN on stream hour fields if a coefficient is ever null/undefined. */
+  private subjectStreamHourWeights(subject: {
+    lectureCoefficient: number;
+    controlCoefficient: number;
+  }) {
+    return {
+      lecture: Math.max(0, Number(subject.lectureCoefficient ?? 0) || 0),
+      control: Math.max(0, Number(subject.controlCoefficient ?? 0) || 0),
+    };
+  }
 
   async list(q: LectureStreamQueryDto) {
     const where: Prisma.LectureStreamWhereInput = {
@@ -109,11 +122,14 @@ export class LectureStreamsService {
 
     try {
       return await this.prisma.$transaction(async (tx) => {
+        const w = this.subjectStreamHourWeights(offering.subject);
         const stream = await tx.lectureStream.create({
           data: {
             subjectOfferingId: offering.id,
             language,
             totalStudentCount,
+            lectureHours: totalStudentCount * w.lecture,
+            controlHours: totalStudentCount * w.control,
             teacherId: dto.teacherId ?? null,
             status: dto.status ?? 'draft',
           },
@@ -160,11 +176,14 @@ export class LectureStreamsService {
 
     try {
       return await this.prisma.$transaction(async (tx) => {
+        const w = this.subjectStreamHourWeights(offering.subject);
         const stream = await tx.lectureStream.update({
           where: { id },
           data: {
             language,
             totalStudentCount,
+            lectureHours: totalStudentCount * w.lecture,
+            controlHours: totalStudentCount * w.control,
             teacherId: dto.teacherId !== undefined ? dto.teacherId : undefined,
             status: dto.status,
           },
@@ -252,7 +271,13 @@ export class LectureStreamsService {
       include: {
         groupLinks: { select: { groupId: true } },
         subject: {
-          select: { directionId: true, level: true, name: true },
+          select: {
+            directionId: true,
+            level: true,
+            name: true,
+            lectureCoefficient: true,
+            controlCoefficient: true,
+          },
         },
       },
     });

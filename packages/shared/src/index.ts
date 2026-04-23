@@ -9,4 +9,5 @@ export * from './schemas/formula';
 export * from './schemas/stream';
 export * from './schemas/workload';
 export * from './lib/category';
+export * from './lib/workload-term';
 export * from './lib/constants';

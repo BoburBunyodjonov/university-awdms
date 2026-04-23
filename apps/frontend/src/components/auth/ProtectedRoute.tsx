@@ -8,5 +8,9 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
-  return <>{children}</>;
+  return (
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col">
+      {children}
+    </div>
+  );
 }

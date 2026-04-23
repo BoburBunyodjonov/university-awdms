@@ -21,7 +21,7 @@ export interface MyWorkloadSummary {
     nonAuditoriumHours: number;
     items: number;
   };
-  byTerm: { fall: number; spring: number };
+  byTerm: { fall: number; spring: number; unknown: number };
   items: WorkloadItemWithRelations[];
 }
 

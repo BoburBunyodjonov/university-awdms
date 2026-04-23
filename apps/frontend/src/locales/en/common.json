@@ -195,11 +195,12 @@
     "multi_select_placeholder": "Choose one or more directions…",
     "fields": {
       "name": "Subject name",
-      "code": "Code",
-      "code_hint": "Optional short reference, e.g. CS101",
       "direction": "Direction",
       "directions_multi": "Directions",
       "directions_multi_hint": "One catalog row per selected direction. Pick at least one.",
+      "lectureCoefficient": "Lecture coefficient",
+      "controlCoefficient": "Control coefficient",
+      "practiceCoefficient": "Practice coefficient",
       "level": "Level",
       "offerings": "Offerings",
       "isActive": "Active"
@@ -339,6 +340,8 @@
     "stream_badge": "Lecture stream",
     "stream_students": "students",
     "group": "Group",
+    "unknown_term": "Semester not set",
+    "unknown_term_hint": "Older or manually entered workload; update the data if needed.",
     "fallbacks": {
       "no_offering_detail": "Academic year {{year}} only — no subject link on this row"
     },
