@@ -1,4 +1,9 @@
-import type { HTMLAttributes, ReactNode, TableHTMLAttributes } from 'react';
+import type {
+  ReactNode,
+  TableHTMLAttributes,
+  TdHTMLAttributes,
+  ThHTMLAttributes,
+} from 'react';
 import type { ViewMode } from '@awdms/shared';
 import { cn } from '@/lib/utils';
 
@@ -10,7 +15,8 @@ interface DataTableProps extends TableHTMLAttributes<HTMLTableElement> {
   footer?: ReactNode;
   empty?: ReactNode;
   isLoading?: boolean;
-  children: ReactNode;
+  /** Filters-only shell may omit a body; full tables should pass `thead`/`tbody`. */
+  children?: ReactNode;
 }
 
 export function DataTable({
@@ -57,7 +63,7 @@ export function DataTable({
 export function Th({
   className,
   ...props
-}: HTMLAttributes<HTMLTableCellElement>) {
+}: ThHTMLAttributes<HTMLTableHeaderCellElement>) {
   return (
     <th
       scope="col"
@@ -70,7 +76,7 @@ export function Th({
 export function Td({
   className,
   ...props
-}: HTMLAttributes<HTMLTableCellElement>) {
+}: TdHTMLAttributes<HTMLTableDataCellElement>) {
   return (
     <td
       className={cn('border-b border-zinc-100 px-3 py-2 align-middle', className)}
