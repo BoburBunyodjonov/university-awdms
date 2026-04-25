@@ -52,7 +52,8 @@
     "phd_supervision_fulltime": "PhD rahbarligi (kunduzgi)",
     "phd_supervision_parttime": "PhD rahbarligi (sirtqi)",
     "scientific_pedagogical": "Ilmiy pedagogik ish",
-    "scientific_internship": "Ilmiy stajirovka"
+    "scientific_internship": "Ilmiy stajirovka",
+    "master_dissertation_supervision": "Magistrlik dissertatsiya raxbarlik"
   },
   "calculationMode": {
     "coefficient_based": "Koeffitsientli",
@@ -140,7 +141,7 @@
       "fullName": "To'liq ismi",
       "position": "Lavozim",
       "degreeName": "Ilmiy darajasi",
-      "degreeName_hint": "Masalan: PhD, dotsent",
+      "degreeName_hint": "Variantlar: Ilmiy daraja yo'q, PhD, DSc",
       "annualNorm": "Yillik norma (soat)",
       "hasScientificDegree": "Ilmiy darajasi bor",
       "isActive": "Faol",

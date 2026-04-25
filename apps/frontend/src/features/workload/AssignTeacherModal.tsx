@@ -35,6 +35,33 @@ function teacherUsedHours(teacher: Teacher): number {
   return (teacher.auditoriumHours ?? 0) + (teacher.nonAuditoriumHours ?? 0);
 }
 
+function getSubjectCoefficient(
+  item: WorkloadItemWithRelations,
+): { value: number; label: string } | null {
+  const subject = item.subjectOffering?.subject;
+  if (!subject) return null;
+
+  switch (item.workloadType as WorkloadType) {
+    case 'lecture':
+      return {
+        value: subject.lectureCoefficient,
+        label: 'subjects.fields.lectureCoefficient',
+      };
+    case 'control':
+      return {
+        value: subject.controlCoefficient,
+        label: 'subjects.fields.controlCoefficient',
+      };
+    case 'practice':
+      return {
+        value: subject.practiceCoefficient,
+        label: 'subjects.fields.practiceCoefficient',
+      };
+    default:
+      return null;
+  }
+}
+
 export function AssignTeacherModal({ open, onClose, item }: Props) {
   const { t } = useTranslation();
   const assignMut = useAssignWorkload();
@@ -87,6 +114,7 @@ export function AssignTeacherModal({ open, onClose, item }: Props) {
   if (!item) return null;
 
   const formula = item.formulaConfig;
+  const subjectCoefficient = getSubjectCoefficient(item);
   const onSubmit = async () => {
     if (!teacherId) {
       setError(t('workload.assign.pick_teacher'));
@@ -217,6 +245,14 @@ export function AssignTeacherModal({ open, onClose, item }: Props) {
           formula={formula}
           studentCount={item.studentCount}
           plannedHours={item.plannedHours}
+          subjectCoefficient={
+            subjectCoefficient
+              ? {
+                  value: subjectCoefficient.value,
+                  label: t(subjectCoefficient.label),
+                }
+              : null
+          }
         />
 
         {error ? (
@@ -351,16 +387,45 @@ interface FormulaBreakdownProps {
   formula: WorkloadItemWithRelations['formulaConfig'];
   studentCount: number;
   plannedHours: number;
+  subjectCoefficient: { value: number; label: string } | null;
 }
 
 function FormulaBreakdown({
   formula,
   studentCount,
   plannedHours,
+  subjectCoefficient,
 }: FormulaBreakdownProps) {
   const { t } = useTranslation();
 
   if (!formula) {
+    if (subjectCoefficient && subjectCoefficient.value > 0) {
+      return (
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-indigo-700">
+              <Calculator className="h-3 w-3" aria-hidden="true" />
+              {t('workload.assign.formula_section')}
+            </div>
+            <span className="text-[11px] font-medium text-zinc-500">
+              {subjectCoefficient.label}
+            </span>
+          </div>
+
+          <p className="mt-2 font-mono text-xs text-zinc-700">
+            {studentCount} × {subjectCoefficient.value}
+          </p>
+
+          <div className="mt-2 flex items-baseline gap-1.5">
+            <span className="text-2xl font-bold tabular-nums text-indigo-700">
+              {plannedHours.toFixed(1)}
+            </span>
+            <span className="text-xs font-medium text-zinc-500">soat</span>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="rounded-xl border border-zinc-200 bg-white p-3 text-[11px] text-zinc-500">
         <div className="mb-1 flex items-center gap-1.5 font-semibold uppercase tracking-wide text-zinc-600">

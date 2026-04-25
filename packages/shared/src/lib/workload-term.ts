@@ -7,8 +7,11 @@ import type { AcademicTerm } from '../types/enums';
 export type WorkloadTermBucket = 'fall' | 'spring' | 'unknown';
 
 export function workloadTermBucket(item: {
+  academicTerm?: AcademicTerm | null;
   subjectOffering: { academicTerm: AcademicTerm } | null | undefined;
 }): WorkloadTermBucket {
+  if (item.academicTerm === 'fall') return 'fall';
+  if (item.academicTerm === 'spring') return 'spring';
   const o = item.subjectOffering;
   if (o == null) return 'unknown';
   if (o.academicTerm === 'fall') return 'fall';

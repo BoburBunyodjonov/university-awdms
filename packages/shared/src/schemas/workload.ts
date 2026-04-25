@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import {
+  AcademicTermEnum,
   AssignmentStatusEnum,
+  StudyLevelEnum,
+  StudyTypeEnum,
   WorkloadCategoryEnum,
   WorkloadTypeEnum,
 } from './enums';
@@ -19,6 +22,11 @@ export const CreateWorkloadItemSchema = z
     groupId: z.string().uuid().nullable().optional(),
     workloadType: WorkloadTypeEnum,
     category: WorkloadCategoryEnum.optional(),
+    academicTerm: AcademicTermEnum.nullable().optional(),
+    semesterNumber: z.number().int().min(1).max(12).nullable().optional(),
+    courseYear: z.number().int().min(1).max(6).nullable().optional(),
+    level: StudyLevelEnum.nullable().optional(),
+    studyType: StudyTypeEnum.nullable().optional(),
     studentCount: z.number().int().min(0).default(0),
     plannedHours: z.number().nonnegative().default(0),
     formulaConfigId: z.string().uuid().nullable().optional(),
@@ -65,7 +73,8 @@ export const CreateWorkloadItemSchema = z
         v.workloadType === 'phd_supervision_fulltime' ||
         v.workloadType === 'phd_supervision_parttime' ||
         v.workloadType === 'scientific_pedagogical' ||
-        v.workloadType === 'scientific_internship') &&
+        v.workloadType === 'scientific_internship' ||
+        v.workloadType === 'master_dissertation_supervision') &&
       v.studentCount > 3
     ) {
       ctx.addIssue({

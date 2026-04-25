@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, GraduationCap, Info, Zap } from 'lucide-react';
-import type { Teacher, WorkloadType } from '@awdms/shared';
+import type { AcademicTerm, Teacher, WorkloadType } from '@awdms/shared';
 import {
   categoryOf,
   isIndivisibleAuditoriumWorkload,
@@ -38,7 +38,7 @@ interface TypeSpec {
   /** Ko'rsatish uchun `subject` dropdown. */
   subject?: boolean;
   /** Bitta guruh / oqim / ko'p guruh tanlash. */
-  scope?: 'group' | 'group_or_stream' | 'groups_multi';
+  scope?: 'group' | 'stream' | 'streams_multi' | 'group_or_stream' | 'groups_multi';
   students?: boolean;
   /** Rule — `scientific_*` va `phd_supervision_*` uchun maksimum 3. */
   studentsMax?: number;
@@ -55,14 +55,13 @@ interface TypeSpec {
 const TYPE_SPEC: Partial<Record<WorkloadType, TypeSpec>> = {
   lecture: {
     subject: true,
-    scope: 'group_or_stream',
-    fixedHours: true,
+    scope: 'streams_multi',
     indivisibleHint: true,
   },
   practice: {
     subject: true,
     scope: 'groups_multi',
-    fixedHours: true,
+    coefficient: true,
     indivisibleHint: true,
   },
   control: { subject: true, students: true, coefficient: true },
@@ -84,6 +83,12 @@ const TYPE_SPEC: Partial<Record<WorkloadType, TypeSpec>> = {
     phdOnly: true,
   },
   scientific_internship: {
+    students: true,
+    studentsMax: 3,
+    coefficient: true,
+    phdOnly: true,
+  },
+  master_dissertation_supervision: {
     students: true,
     studentsMax: 3,
     coefficient: true,
@@ -115,6 +120,7 @@ const NON_AUDITORIUM_TYPES: WorkloadType[] = [
   'prediploma',
   'scientific_pedagogical',
   'scientific_internship',
+  'master_dissertation_supervision',
   'phd_supervision_parttime',
   'phd_supervision_fulltime',
 ];
@@ -124,7 +130,9 @@ interface FormState {
   scopeKind: ScopeKind;
   groupId: string;
   streamId: string;
+  streamIds: string[];
   groupIds: string[];
+  semesterNumber: number;
   studentCount: number;
   coefficient: number;
   fixedHours: number;
@@ -135,7 +143,9 @@ const DEFAULT_FORM: FormState = {
   scopeKind: 'group',
   groupId: '',
   streamId: '',
+  streamIds: [],
   groupIds: [],
+  semesterNumber: 1,
   studentCount: 0,
   coefficient: 0,
   fixedHours: 0,
@@ -159,16 +169,110 @@ function roundHours(n: number): string {
   return n % 1 === 0 ? n.toFixed(0) : n.toFixed(1);
 }
 
+function termFromSemester(semesterNumber: number): AcademicTerm {
+  return semesterNumber % 2 === 1 ? 'fall' : 'spring';
+}
+
+function semesterFromTerm(term: AcademicTerm, courseYear = 1): number {
+  return (courseYear - 1) * 2 + (term === 'fall' ? 1 : 2);
+}
+
+function isStudentOnlyContextType(type: WorkloadType): boolean {
+  return (
+    type === 'VQR_full_time' ||
+    type === 'VQR_part_time' ||
+    type === 'MD' ||
+    type === 'NDP' ||
+    type === 'NS' ||
+    type === 'phd_supervision_fulltime' ||
+    type === 'phd_supervision_parttime' ||
+    type === 'scientific_pedagogical' ||
+    type === 'scientific_internship' ||
+    type === 'master_dissertation_supervision'
+  );
+}
+
+function defaultSemesterForType(type: WorkloadType, term: AcademicTerm): number {
+  if (type === 'scientific_pedagogical') return term === 'spring' ? 2 : 1;
+  if (
+    type === 'scientific_internship' ||
+    type === 'master_dissertation_supervision'
+  ) {
+    return 4;
+  }
+  if (type === 'VQR_full_time' || type === 'VQR_part_time') {
+    return semesterFromTerm(term, 4);
+  }
+  return semesterFromTerm(term, 1);
+}
+
+function workloadContextForType(type: WorkloadType, term: AcademicTerm, semester: number) {
+  if (type === 'VQR_full_time') {
+    return {
+      academicTerm: term,
+      semesterNumber: semesterFromTerm(term, 4),
+      courseYear: 4,
+      level: 'bachelor' as const,
+      studyType: 'full_time' as const,
+    };
+  }
+  if (type === 'VQR_part_time') {
+    return {
+      academicTerm: term,
+      semesterNumber: semesterFromTerm(term, 4),
+      courseYear: 4,
+      level: 'bachelor' as const,
+      studyType: 'part_time' as const,
+    };
+  }
+  if (
+    type === 'scientific_pedagogical' ||
+    type === 'scientific_internship' ||
+    type === 'master_dissertation_supervision'
+  ) {
+    return {
+      academicTerm: termFromSemester(semester),
+      semesterNumber: semester,
+      courseYear: Math.ceil(semester / 2),
+      level: 'master' as const,
+      studyType: 'full_time' as const,
+    };
+  }
+  return {
+    academicTerm: term,
+    semesterNumber: semesterFromTerm(term, 1),
+    courseYear: 1,
+    level: 'master' as const,
+    studyType: 'full_time' as const,
+  };
+}
+
 interface ComputeResult {
   hours: number;
   /** Har bir tur uchun live formula matni (screenshot'dagi "2 talaba × 150" kabi). */
   text: string;
 }
 
+interface LectureStreamCalc {
+  lectureHours: number;
+  totalStudentCount: number;
+  controlCoefficient: number;
+}
+
 function computeHours(
   type: WorkloadType,
   state: FormState,
   tWorkType: (wt: WorkloadType) => string,
+  linked: {
+    lectureHours?: number;
+    lectureCoefficient?: number;
+    controlCoefficient?: number;
+    streamStudents?: number;
+    selectedStreams?: LectureStreamCalc[];
+    practiceCoefficient?: number;
+    selectedGroupStudentCount?: number;
+    selectedGroupCount?: number;
+  } = {},
 ): ComputeResult {
   const spec = TYPE_SPEC[type];
   if (!spec) return { hours: 0, text: '—' };
@@ -176,13 +280,55 @@ function computeHours(
   const s = Number.isFinite(state.studentCount) ? state.studentCount : 0;
   const c = Number.isFinite(state.coefficient) ? state.coefficient : 0;
   const f = Number.isFinite(state.fixedHours) ? state.fixedHours : 0;
-  const gCount = state.groupIds.length;
 
   if (type === 'lecture') {
-    return { hours: f, text: `Fixed ${roundHours(f)}` };
+    if (linked.selectedStreams?.length) {
+      const lectureHours = linked.selectedStreams.reduce(
+        (n, stream) => n + stream.lectureHours,
+        0,
+      );
+      const controlHours = linked.selectedStreams.reduce(
+        (n, stream) =>
+          n + stream.totalStudentCount * stream.controlCoefficient,
+        0,
+      );
+      const studentCount = linked.selectedStreams.reduce(
+        (n, stream) => n + stream.totalStudentCount,
+        0,
+      );
+      const coefficients = [
+        ...new Set(linked.selectedStreams.map((stream) => stream.controlCoefficient)),
+      ];
+      const formulaText =
+        coefficients.length === 1
+          ? `${roundHours(lectureHours)} + ${studentCount} × ${coefficients[0]}`
+          : linked.selectedStreams
+              .map(
+                (stream) =>
+                  `${roundHours(stream.lectureHours)} + ${stream.totalStudentCount} × ${stream.controlCoefficient}`,
+              )
+              .join(' + ');
+      return {
+        hours: lectureHours + controlHours,
+        text: formulaText,
+      };
+    }
+
+    const lectureHours = linked.lectureHours ?? f;
+    const students = linked.streamStudents ?? s;
+    const controlCoefficient = linked.controlCoefficient ?? c;
+    return {
+      hours: lectureHours + students * controlCoefficient,
+      text: `${roundHours(lectureHours)} + ${students} × ${controlCoefficient}`,
+    };
   }
   if (type === 'practice') {
-    return { hours: f * gCount, text: `${gCount} × ${roundHours(f)}` };
+    const groupCount = linked.selectedGroupCount ?? state.groupIds.length;
+    const coefficient = linked.practiceCoefficient ?? c;
+    return {
+      hours: groupCount * coefficient,
+      text: `${groupCount} × ${coefficient}`,
+    };
   }
   if (type === 'internship' || type === 'prediploma') {
     return { hours: f * s, text: `${s} × ${roundHours(f)}` };
@@ -193,7 +339,8 @@ function computeHours(
   }
   // control, VQR_*, scientific_*, phd_supervision_*
   void tWorkType;
-  return { hours: s * c, text: `${s} × ${c}` };
+  const coefficient = type === 'control' ? linked.controlCoefficient ?? c : c;
+  return { hours: s * coefficient, text: `${s} × ${coefficient}` };
 }
 
 /**
@@ -211,16 +358,38 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
   const [workloadType, setWorkloadType] = useState<WorkloadType | ''>('');
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [yearId, setYearId] = useState<string>('');
+  const [academicTerm, setAcademicTerm] = useState<AcademicTerm>('fall');
 
   const spec = workloadType ? TYPE_SPEC[workloadType] : undefined;
+  const groupCourseYearFilter =
+    workloadType === 'internship'
+      ? 3
+      : workloadType === 'prediploma'
+        ? 4
+        : undefined;
 
   useEffect(() => {
     if (open) {
       setWorkloadType('');
       setForm(DEFAULT_FORM);
       setYearId('');
+      setAcademicTerm('fall');
     }
   }, [open]);
+
+  useEffect(() => {
+    setForm(DEFAULT_FORM);
+  }, [academicTerm]);
+
+  useEffect(() => {
+    if (
+      workloadType === 'scientific_internship' ||
+      workloadType === 'master_dissertation_supervision'
+    ) {
+      setAcademicTerm('spring');
+      setForm((prev) => ({ ...prev, semesterNumber: 4 }));
+    }
+  }, [workloadType]);
 
   // When type changes, reset fields that no longer apply. Keep user-entered
   // values for fields that carry over between similar types (students, coef).
@@ -237,15 +406,20 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
           ? prev.groupId
           : '',
       streamId:
-        spec.scope === 'group_or_stream' && prev.scopeKind === 'stream'
+        spec.scope === 'stream' ||
+        (spec.scope === 'group_or_stream' && prev.scopeKind === 'stream')
           ? prev.streamId
           : '',
+      streamIds: spec.scope === 'streams_multi' ? prev.streamIds : [],
       groupIds: spec.scope === 'groups_multi' ? prev.groupIds : [],
+      semesterNumber: workloadType
+        ? defaultSemesterForType(workloadType, academicTerm)
+        : prev.semesterNumber,
       studentCount: spec.students ? prev.studentCount : 0,
       coefficient: spec.coefficient ? prev.coefficient : 0,
       fixedHours: spec.fixedHours ? prev.fixedHours : 0,
     }));
-  }, [spec]);
+  }, [academicTerm, spec, workloadType]);
 
   // Lookups (enabled only when relevant field is visible, to avoid wasted API calls)
   const { data: subjectsData } = useSubjects({
@@ -256,6 +430,8 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
   const { data: groupsData } = useGroups({
     page: 1,
     pageSize: LIST_PAGE_SIZE_MAX,
+    academicTerm,
+    courseYear: groupCourseYearFilter,
   });
   const { data: streamsData } = useStreams({
     page: 1,
@@ -264,6 +440,7 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
   const { data: offeringsData } = useSubjectOfferings({
     page: 1,
     pageSize: LIST_PAGE_SIZE_MAX,
+    academicTerm,
   });
 
   const selectedGroup = useMemo(() => {
@@ -274,11 +451,97 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
     if (!form.streamId) return null;
     return streamsData?.items.find((s) => s.id === form.streamId) ?? null;
   }, [streamsData?.items, form.streamId]);
+  const selectedStreams = useMemo(() => {
+    if (!form.streamIds.length) return [];
+    const selected = new Set(form.streamIds);
+    return streamsData?.items.filter((s) => selected.has(s.id)) ?? [];
+  }, [form.streamIds, streamsData?.items]);
+  const selectedSubject = useMemo(() => {
+    if (selectedStream) return selectedStream.subjectOffering.subject;
+    if (selectedStreams.length > 0) {
+      return selectedStreams[0]!.subjectOffering.subject;
+    }
+    if (!form.subjectId) return null;
+    return subjectsData?.items.find((s) => s.id === form.subjectId) ?? null;
+  }, [form.subjectId, selectedStream, selectedStreams, subjectsData?.items]);
+  const selectedMultiGroups = useMemo(() => {
+    if (!form.groupIds.length) return [];
+    const selected = new Set(form.groupIds);
+    return groupsData?.items.filter((g) => selected.has(g.id)) ?? [];
+  }, [form.groupIds, groupsData?.items]);
+  const selectedGroupStudentCount = useMemo(
+    () => selectedMultiGroups.reduce((n, g) => n + g.studentCount, 0),
+    [selectedMultiGroups],
+  );
+  const streamOptions = useMemo(() => {
+    const streams = (streamsData?.items ?? []).filter(
+      (stream) => stream.subjectOffering.academicTerm === academicTerm,
+    );
+    if (!form.subjectId) return streams;
+    return streams.filter((s) => s.subjectOffering.subject.id === form.subjectId);
+  }, [academicTerm, form.subjectId, streamsData?.items]);
+  const subjectOptions = useMemo(() => {
+    const byId = new Map<
+      string,
+      { value: string; label: string; description?: string }
+    >();
+
+    if (workloadType === 'lecture') {
+      for (const stream of streamOptions) {
+        const subject = stream.subjectOffering.subject;
+        if (!byId.has(subject.id)) {
+          byId.set(subject.id, {
+            value: subject.id,
+            label: subject.name,
+            description: subject.direction?.name,
+          });
+        }
+      }
+    } else {
+      for (const offering of offeringsData?.items ?? []) {
+        const subject = offering.subject;
+        if (!byId.has(subject.id)) {
+          byId.set(subject.id, {
+            value: subject.id,
+            label: subject.name,
+            description: subject.direction?.name,
+          });
+        }
+      }
+    }
+
+    return [...byId.values()];
+  }, [offeringsData?.items, streamOptions, workloadType]);
+  const selectedLectureStreamsForCalc = useMemo(
+    () =>
+      selectedStreams.map((stream) => ({
+        lectureHours: stream.lectureHours,
+        totalStudentCount: stream.totalStudentCount,
+        controlCoefficient: stream.subjectOffering.subject.controlCoefficient,
+      })),
+    [selectedStreams],
+  );
+  const linkedCoefficient = useMemo(() => {
+    if (!workloadType || !selectedSubject) return 0;
+    if (workloadType === 'control') return selectedSubject.controlCoefficient;
+    if (workloadType === 'practice') return selectedSubject.practiceCoefficient;
+    return 0;
+  }, [selectedSubject, workloadType]);
+  const isSubjectCoefficientLinked = Boolean(
+    selectedSubject &&
+      (workloadType === 'control' || workloadType === 'practice'),
+  );
 
   const resolvedSubjectOfferingId = useMemo(() => {
     // Stream-scoped rows always have an offering behind the stream.
-    if (spec?.scope === 'group_or_stream' && form.scopeKind === 'stream') {
+    if (
+      spec?.scope === 'stream' ||
+      (spec?.scope === 'group_or_stream' && form.scopeKind === 'stream')
+    ) {
       return selectedStream?.subjectOffering?.id ?? null;
+    }
+    if (spec?.scope === 'streams_multi') {
+      return selectedStreams[0]?.subjectOffering.id ?? null;
     }
     // Types without subject don't bind to offering by design.
     if (!spec?.subject || !form.subjectId) return null;
@@ -311,6 +574,7 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
     form.groupId,
     form.groupIds,
     selectedStream?.subjectOffering?.id,
+    selectedStreams,
     offeringsData?.items,
   ]);
 
@@ -322,11 +586,46 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
     });
   }, [spec?.students, selectedGroup]);
 
+  useEffect(() => {
+    if (spec?.scope !== 'groups_multi') return;
+    setForm((prev) => {
+      if (prev.studentCount === selectedGroupStudentCount) return prev;
+      return { ...prev, studentCount: selectedGroupStudentCount };
+    });
+  }, [selectedGroupStudentCount, spec?.scope]);
+
+  useEffect(() => {
+    if (!spec?.coefficient || !isSubjectCoefficientLinked) return;
+    setForm((prev) => {
+      if (prev.coefficient === linkedCoefficient) return prev;
+      return { ...prev, coefficient: linkedCoefficient };
+    });
+  }, [isSubjectCoefficientLinked, linkedCoefficient, spec?.coefficient]);
+
   const compute = useMemo(() => {
     if (!workloadType)
       return { hours: 0, text: t('workload.assign_to_teacher.pick_type') };
-    return computeHours(workloadType, form, (wt) => t(`workloadType.${wt}`));
-  }, [workloadType, form, t]);
+    return computeHours(workloadType, form, (wt) => t(`workloadType.${wt}`), {
+      lectureHours: selectedStream?.lectureHours,
+      controlCoefficient: selectedSubject?.controlCoefficient,
+      streamStudents: selectedStream?.totalStudentCount,
+      selectedStreams: selectedLectureStreamsForCalc,
+      practiceCoefficient: selectedSubject?.practiceCoefficient,
+      selectedGroupStudentCount,
+      selectedGroupCount: selectedMultiGroups.length,
+    });
+  }, [
+    workloadType,
+    form,
+    t,
+    selectedStream?.lectureHours,
+    selectedStream?.totalStudentCount,
+    selectedLectureStreamsForCalc,
+    selectedSubject?.controlCoefficient,
+    selectedSubject?.practiceCoefficient,
+    selectedGroupStudentCount,
+    selectedMultiGroups.length,
+  ]);
 
   const degreeMismatch = useMemo(() => {
     if (!workloadType || !teacher) return false;
@@ -361,6 +660,9 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
     if (spec.subject && !form.subjectId) return false;
     if (spec.subject && !resolvedSubjectOfferingId) return false;
     if (spec.scope === 'group' && !form.groupId) return false;
+    if (spec.scope === 'stream' && !form.streamId) return false;
+    if (spec.scope === 'streams_multi' && form.streamIds.length === 0)
+      return false;
     if (spec.scope === 'group_or_stream') {
       if (form.scopeKind === 'group' && !form.groupId) return false;
       if (form.scopeKind === 'stream' && !form.streamId) return false;
@@ -384,13 +686,55 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
 
   const onSubmit = async () => {
     if (!workloadType || !effectiveYearId || !canSubmit) return;
+    if (workloadType === 'lecture' && spec?.scope === 'streams_multi') {
+      try {
+        for (const stream of selectedStreams) {
+          const plannedHours =
+            stream.lectureHours +
+            stream.totalStudentCount *
+              stream.subjectOffering.subject.controlCoefficient;
+          await createMut.mutateAsync({
+            academicYearId: effectiveYearId,
+            subjectOfferingId: stream.subjectOffering.id,
+            workloadType,
+            category: categoryOf(workloadType),
+            studentCount: stream.totalStudentCount,
+            plannedHours,
+            requiresDegree: requiresScientificDegree(workloadType),
+            assignedTeacherId: teacher.id,
+            groupId: null,
+            lectureStreamId: stream.id,
+            academicTerm: stream.subjectOffering.academicTerm,
+            semesterNumber: stream.subjectOffering.semesterNumber,
+            courseYear: stream.subjectOffering.courseYear,
+            level: stream.subjectOffering.subject.level,
+            studyType: stream.subjectOffering.studyType,
+            status: 'assigned',
+          });
+        }
+        onClose();
+      } catch {
+        /* toast handled by mutation onError */
+      }
+      return;
+    }
+
+    const studentCount =
+      spec?.scope === 'stream'
+        ? selectedStream?.totalStudentCount ?? 0
+        : spec?.scope === 'groups_multi'
+          ? selectedGroupStudentCount
+          : form.studentCount || 0;
+    const metadata = isStudentOnlyContextType(workloadType)
+      ? workloadContextForType(workloadType, academicTerm, form.semesterNumber)
+      : {};
     try {
       await createMut.mutateAsync({
         academicYearId: effectiveYearId,
         subjectOfferingId: resolvedSubjectOfferingId,
         workloadType,
         category: categoryOf(workloadType),
-        studentCount: form.studentCount || 0,
+        studentCount,
         plannedHours: compute.hours,
         requiresDegree: requiresScientificDegree(workloadType),
         assignedTeacherId: teacher.id,
@@ -401,9 +745,12 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
               ? form.groupId || null
               : null,
         lectureStreamId:
-          spec?.scope === 'group_or_stream' && form.scopeKind === 'stream'
+          spec?.scope === 'stream'
+            ? form.streamId || null
+            : spec?.scope === 'group_or_stream' && form.scopeKind === 'stream'
             ? form.streamId || null
             : null,
+        ...metadata,
         status: 'assigned',
       });
       onClose();
@@ -490,6 +837,19 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
           ) : null}
         </div>
 
+        <Field
+          label={`${t('offerings.fields.academicTerm', { defaultValue: 'Semestr' })} *`}
+        >
+          <Select
+            value={academicTerm}
+            onValueChange={(v) => setAcademicTerm((v as AcademicTerm) ?? 'fall')}
+            options={[
+              { value: 'fall', label: t('academicTerm.fall') },
+              { value: 'spring', label: t('academicTerm.spring') },
+            ]}
+          />
+        </Field>
+
         {/* Workload type (grouped) */}
         <Field label={`${t('workload.assign.type_label')} *`}>
           <Select
@@ -526,16 +886,17 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
                 <Select
                   value={form.subjectId}
                   onValueChange={(v) =>
-                    setForm((f) => ({ ...f, subjectId: v ?? '' }))
+                    setForm((f) => ({
+                      ...f,
+                      subjectId: v ?? '',
+                      streamId: '',
+                      streamIds: [],
+                      groupId: '',
+                      groupIds: [],
+                    }))
                   }
                   placeholder={t('workload.assign_to_teacher.pick_subject')}
-                  options={
-                    subjectsData?.items.map((s) => ({
-                      value: s.id,
-                      label: s.name,
-                      description: s.direction?.name,
-                    })) ?? []
-                  }
+                  options={subjectOptions}
                 />
               </Field>
             ) : null}
@@ -609,6 +970,45 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
               </div>
             ) : null}
 
+            {spec.scope === 'stream' ? (
+              <Field label={`${t('workload.stream_badge')} *`}>
+                <Select
+                  value={form.streamId}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, streamId: v ?? '' }))
+                  }
+                  placeholder={t('workload.assign_to_teacher.pick_stream')}
+                  options={streamOptions.map((s) => ({
+                    value: s.id,
+                    label: `${s.subjectOffering.subject.name} · ${t(`language.${s.language}`)}`,
+                    description: `${s.totalStudentCount} ${t('workload.stream_students')} · ${roundHours(s.lectureHours)} + ${roundHours(s.controlHours)} ${t('workload.assign_to_teacher.hours_short')}`,
+                  }))}
+                />
+              </Field>
+            ) : null}
+
+            {spec.scope === 'streams_multi' ? (
+              <Field label={`${t('nav.streams')} *`}>
+                <MultiSelect
+                  value={form.streamIds}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, streamIds: v }))
+                  }
+                  placeholder={t('workload.assign_to_teacher.pick_stream')}
+                  emptyContent={
+                    form.subjectId
+                      ? 'Bu fan bo‘yicha potok topilmadi.'
+                      : 'Avval fanni tanlang.'
+                  }
+                  options={streamOptions.map((s) => ({
+                    value: s.id,
+                    label: `${s.subjectOffering.subject.name} · ${t(`language.${s.language}`)}`,
+                    description: `${s.totalStudentCount} ${t('workload.stream_students')} · ${roundHours(s.lectureHours)} + ${roundHours(s.controlHours)} ${t('workload.assign_to_teacher.hours_short')}`,
+                  }))}
+                />
+              </Field>
+            ) : null}
+
             {spec.scope === 'group' ? (
               <Field label={`${t('workload.group')} *`}>
                 <Select
@@ -642,6 +1042,35 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
                       label: g.name,
                       description: g.direction?.name,
                     })) ?? []
+                  }
+                />
+              </Field>
+            ) : null}
+
+            {workloadType &&
+            isStudentOnlyContextType(workloadType) &&
+            (workloadType === 'scientific_pedagogical' ||
+              workloadType === 'scientific_internship' ||
+              workloadType === 'master_dissertation_supervision') ? (
+              <Field label="Semestr *">
+                <Select
+                  value={String(form.semesterNumber)}
+                  onValueChange={(v) => {
+                    const semester = Number(v) || 1;
+                    setAcademicTerm(termFromSemester(semester));
+                    setForm((f) => ({ ...f, semesterNumber: semester }));
+                  }}
+                  disabled={
+                    workloadType === 'scientific_internship' ||
+                    workloadType === 'master_dissertation_supervision'
+                  }
+                  options={
+                    workloadType === 'scientific_pedagogical'
+                      ? [1, 2, 3].map((semester) => ({
+                          value: String(semester),
+                          label: `${semester}-semestr`,
+                        }))
+                      : [{ value: '4', label: '4-semestr' }]
                   }
                 />
               </Field>
@@ -691,6 +1120,7 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
                         raw === '' ? 0 : Number.parseFloat(raw) || 0,
                     }));
                   }}
+                  disabled={isSubjectCoefficientLinked}
                 />
               </Field>
             ) : null}

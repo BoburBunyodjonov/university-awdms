@@ -29,7 +29,8 @@ export type WorkloadType =
   | 'phd_supervision_fulltime'
   | 'phd_supervision_parttime'
   | 'scientific_pedagogical'
-  | 'scientific_internship';
+  | 'scientific_internship'
+  | 'master_dissertation_supervision';
 
 export type WorkloadCategory = 'auditorium' | 'non_auditorium';
 
@@ -61,7 +62,8 @@ export type FormulaScope =
   | 'phd_supervision_fulltime'
   | 'phd_supervision_parttime'
   | 'scientific_pedagogical'
-  | 'scientific_internship';
+  | 'scientific_internship'
+  | 'master_dissertation_supervision';
 
 export type AssignmentAction = 'assign' | 'reassign' | 'unassign';
 

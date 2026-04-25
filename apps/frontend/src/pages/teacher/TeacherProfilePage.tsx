@@ -43,6 +43,7 @@ const WORKLOAD_TYPES: WorkloadType[] = [
   'phd_supervision_parttime',
   'scientific_pedagogical',
   'scientific_internship',
+  'master_dissertation_supervision',
 ];
 
 type CategoryFilter = 'all' | WorkloadCategory;

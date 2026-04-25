@@ -11,6 +11,20 @@ import type {
   UpdateTeacherDto,
 } from './dto/teacher.dto';
 
+function hasScientificDegree(degreeName?: string) {
+  return degreeName === 'PhD' || degreeName === 'DSc';
+}
+
+function normalizeTeacherDegree<T extends CreateTeacherDto | UpdateTeacherDto>(
+  dto: T,
+): T {
+  if (!dto.degreeName) return dto;
+  return {
+    ...dto,
+    hasScientificDegree: hasScientificDegree(dto.degreeName),
+  };
+}
+
 @Injectable()
 export class TeachersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -130,7 +144,12 @@ export class TeachersService {
     }));
     return {
       fullName: t.fullName,
-      degree: t.hasScientificDegree ? 'PhD' : 'NoDegree',
+      degree:
+        t.degreeName === 'DSc'
+          ? 'DSc'
+          : t.hasScientificDegree
+            ? 'PhD'
+            : 'NoDegree',
       annualNorm: t.annualNorm,
       position: t.position,
       degreeName: t.degreeName,
@@ -142,12 +161,15 @@ export class TeachersService {
   }
 
   create(dto: CreateTeacherDto) {
-    return this.prisma.teacher.create({ data: dto });
+    return this.prisma.teacher.create({ data: normalizeTeacherDegree(dto) });
   }
 
   async update(id: string, dto: UpdateTeacherDto) {
     await this.findOne(id);
-    return this.prisma.teacher.update({ where: { id }, data: dto });
+    return this.prisma.teacher.update({
+      where: { id },
+      data: normalizeTeacherDegree(dto),
+    });
   }
 
   // Soft delete: teachers referenced by workload items / logs cannot be hard-deleted

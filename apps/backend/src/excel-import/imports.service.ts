@@ -26,6 +26,7 @@ const PHD_CAPPED_TYPES: WorkloadType[] = [
   'phd_supervision_parttime',
   'scientific_pedagogical',
   'scientific_internship',
+  'master_dissertation_supervision',
 ];
 
 type ImportRow = {
@@ -178,6 +179,32 @@ export class ImportsService {
       if (PHD_CAPPED_TYPES.includes(row.workloadType) && row.studentCount > 3) {
         rowErrors.push(this.err(row.rowNumber, 'studentCount', 'MAX_STUDENTS_EXCEEDED', `${row.workloadType} allows at most 3 students`, 'Reduce studentCount to 3 or lower'));
       }
+      if (
+        (row.workloadType === 'VQR_full_time' ||
+          row.workloadType === 'VQR_part_time') &&
+        row.courseYear !== 4
+      ) {
+        rowErrors.push(this.err(row.rowNumber, 'courseYear', 'INVALID_COURSE', 'Bitiruv malakaviy ish faqat 4-kurs uchun', 'Set courseYear to 4'));
+      }
+      if (row.workloadType === 'internship' && row.courseYear !== 3) {
+        rowErrors.push(this.err(row.rowNumber, 'courseYear', 'INVALID_COURSE', 'Ishlab chiqarish amaliyoti faqat 3-kurs uchun', 'Set courseYear to 3'));
+      }
+      if (row.workloadType === 'prediploma' && row.courseYear !== 4) {
+        rowErrors.push(this.err(row.rowNumber, 'courseYear', 'INVALID_COURSE', 'Bitiruv oldi amaliyoti faqat 4-kurs uchun', 'Set courseYear to 4'));
+      }
+      if (
+        row.workloadType === 'scientific_pedagogical' &&
+        (row.semesterNumber < 1 || row.semesterNumber > 3)
+      ) {
+        rowErrors.push(this.err(row.rowNumber, 'semesterNumber', 'INVALID_SEMESTER', 'Ilmiy pedagogik ish faqat 1-3 semestrlar uchun', 'Use semesterNumber 1, 2, or 3'));
+      }
+      if (
+        (row.workloadType === 'scientific_internship' ||
+          row.workloadType === 'master_dissertation_supervision') &&
+        row.semesterNumber !== 4
+      ) {
+        rowErrors.push(this.err(row.rowNumber, 'semesterNumber', 'INVALID_SEMESTER', 'Bu yuklama faqat 4-semestr uchun', 'Set semesterNumber to 4'));
+      }
       const dedupeKey = `${row.academicYear}|${row.subjectName}|${row.groupName}|${row.workloadType}|${row.semesterNumber}`;
       if (dedupe.has(dedupeKey)) {
         rowErrors.push(this.err(row.rowNumber, 'workloadType', 'DUPLICATE_IN_FILE', 'Duplicate key in the same import file', 'Keep only one row per key (year+subject+group+type+semester)'));
@@ -222,6 +249,11 @@ export class ImportsService {
         groupId: ctx.groupId,
         workloadType: wtype,
         category: categoryOf(row.workloadType) as $Enums.WorkloadCategory,
+        academicTerm: row.academicTerm as $Enums.AcademicTerm,
+        semesterNumber: row.semesterNumber,
+        courseYear: row.courseYear,
+        level: ctx.level,
+        studyType: row.studyType as $Enums.StudyType,
         studentCount: row.studentCount,
         plannedHours: ctx.plannedHours,
         formulaConfigId: ctx.formulaId,
@@ -288,7 +320,7 @@ export class ImportsService {
 
     const subject = await this.prisma.subject.findFirst({
       where: { name: row.subjectName },
-      select: { id: true },
+      select: { id: true, level: true },
     });
     if (!subject) {
       throw new BadRequestException(
@@ -309,6 +341,16 @@ export class ImportsService {
     if (!offering) {
       throw new BadRequestException(
         `Row ${row.rowNumber}: matching subject offering not found for "${row.subjectName}"`,
+      );
+    }
+    if (
+      (row.workloadType === 'scientific_pedagogical' ||
+        row.workloadType === 'scientific_internship' ||
+        row.workloadType === 'master_dissertation_supervision') &&
+      subject.level !== 'master'
+    ) {
+      throw new BadRequestException(
+        `Row ${row.rowNumber}: ${row.workloadType} requires master level`,
       );
     }
 
@@ -354,6 +396,7 @@ export class ImportsService {
       formulaId: formula?.id ?? null,
       plannedHours,
       teacherId,
+      level: subject.level as $Enums.StudyLevel,
     };
   }
 
@@ -437,6 +480,7 @@ export class ImportsService {
       'phd_supervision_parttime',
       'scientific_pedagogical',
       'scientific_internship',
+      'master_dissertation_supervision',
     ];
     if (!allowed.includes(mapped)) {
       throw new BadRequestException(

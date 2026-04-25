@@ -179,9 +179,7 @@ export function TeachersPage() {
                   </div>
                 </Td>
                 <Td className="text-sm text-zinc-800">
-                  {teacher.hasScientificDegree
-                    ? t('teachers.list.degree_phd')
-                    : t('teachers.list.degree_no')}
+                  {teacher.degreeName}
                 </Td>
                 <Td className="text-right tabular-nums text-zinc-900">
                   {total.toFixed(1)}

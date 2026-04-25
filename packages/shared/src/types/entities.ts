@@ -144,6 +144,11 @@ export interface WorkloadItem {
   groupId: string | null;
   workloadType: WorkloadType;
   category: WorkloadCategory;
+  academicTerm: AcademicTerm | null;
+  semesterNumber: number | null;
+  courseYear: number | null;
+  level: StudyLevel | null;
+  studyType: StudyType | null;
   studentCount: number;
   plannedHours: number;
   formulaConfigId: string | null;

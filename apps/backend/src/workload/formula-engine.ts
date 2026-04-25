@@ -73,6 +73,7 @@ export function evaluateFormula(
     case 'phd_supervision_parttime':
     case 'scientific_pedagogical':
     case 'scientific_internship':
+    case 'master_dissertation_supervision':
       if (f.calculationMode === 'fixed_per_student') return f.fixedHoursPerStudent * sc;
       if (f.calculationMode === 'coefficient_based') return f.coefficientPerStudent * sc;
       return f.fixedValue;

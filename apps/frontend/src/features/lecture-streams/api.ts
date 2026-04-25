@@ -39,6 +39,9 @@ export interface StreamWithRelations extends LectureStream {
       name: string;
       code: string | null;
       level: 'bachelor' | 'master';
+      lectureCoefficient: number;
+      controlCoefficient: number;
+      practiceCoefficient: number;
       directionId: string;
       direction: { id: string; name: string; code: string };
     };

@@ -52,6 +52,7 @@ const WORKLOAD_TYPES = [
   'phd_supervision_parttime',
   'scientific_pedagogical',
   'scientific_internship',
+  'master_dissertation_supervision',
 ] as const;
 
 export function WorkloadPage() {

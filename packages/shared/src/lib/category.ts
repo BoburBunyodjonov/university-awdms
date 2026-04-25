@@ -24,6 +24,7 @@ export function categoryOf(type: WorkloadType): WorkloadCategory {
     case 'phd_supervision_parttime':
     case 'scientific_pedagogical':
     case 'scientific_internship':
+    case 'master_dissertation_supervision':
       return 'non_auditorium';
   }
 }
@@ -45,6 +46,7 @@ export function requiresScientificDegree(type: WorkloadType): boolean {
     type === 'phd_supervision_fulltime' ||
     type === 'phd_supervision_parttime' ||
     type === 'scientific_pedagogical' ||
-    type === 'scientific_internship'
+    type === 'scientific_internship' ||
+    type === 'master_dissertation_supervision'
   );
 }

@@ -37,6 +37,9 @@ export interface OfferingWithRelations extends SubjectOffering {
     name: string;
     code: string | null;
     level: StudyLevel;
+    lectureCoefficient: number;
+    controlCoefficient: number;
+    practiceCoefficient: number;
     directionId: string;
     direction: { id: string; name: string; code: string };
   };

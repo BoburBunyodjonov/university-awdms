@@ -25,6 +25,7 @@ export const WorkloadTypeEnum = z.enum([
   'phd_supervision_parttime',
   'scientific_pedagogical',
   'scientific_internship',
+  'master_dissertation_supervision',
 ]);
 
 export const WorkloadCategoryEnum = z.enum(['auditorium', 'non_auditorium']);
@@ -57,6 +58,7 @@ export const FormulaScopeEnum = z.enum([
   'phd_supervision_parttime',
   'scientific_pedagogical',
   'scientific_internship',
+  'master_dissertation_supervision',
 ]);
 
 export const AssignmentActionEnum = z.enum(['assign', 'reassign', 'unassign']);

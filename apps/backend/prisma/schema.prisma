@@ -64,6 +64,7 @@ enum WorkloadType {
   phd_supervision_parttime
   scientific_pedagogical
   scientific_internship
+  master_dissertation_supervision
 }
 
 enum WorkloadCategory {
@@ -110,6 +111,7 @@ enum FormulaScope {
   phd_supervision_parttime
   scientific_pedagogical
   scientific_internship
+  master_dissertation_supervision
 }
 
 enum AssignmentAction {
@@ -400,6 +402,11 @@ model WorkloadItem {
   group             Group?           @relation(fields: [groupId], references: [id], onDelete: SetNull)
   workloadType      WorkloadType
   category          WorkloadCategory
+  academicTerm      AcademicTerm?
+  semesterNumber    Int?
+  courseYear        Int?
+  level             StudyLevel?
+  studyType         StudyType?
   studentCount      Int              @default(0)
   plannedHours      Float            @default(0)
   formulaConfigId   String?          @db.Uuid

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Field } from '@/components/ui/field';
 import { useSubjectOfferings } from '@/features/subject-offerings/api';
+import { useTeachers } from '@/features/teachers/api';
 import { api } from '@/lib/api';
 import { LIST_PAGE_SIZE_MAX } from '@/lib/pagination';
 import { useQuery } from '@tanstack/react-query';
@@ -53,7 +54,14 @@ interface OfferingGroupLink {
 
 interface OfferingDetail {
   id: string;
-  subject: { name: string; code: string | null; level: string };
+  subject: {
+    name: string;
+    code: string | null;
+    level: string;
+    lectureCoefficient: number;
+    controlCoefficient: number;
+    practiceCoefficient: number;
+  };
   groupLinks: OfferingGroupLink[];
 }
 
@@ -62,6 +70,11 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
   const isEditing = Boolean(stream);
   const createMut = useCreateStream();
   const updateMut = useUpdateStream(stream?.id ?? '');
+  const { data: teachersList } = useTeachers({
+    page: 1,
+    pageSize: LIST_PAGE_SIZE_MAX,
+    isActive: true,
+  });
 
   const { data: offeringsList } = useSubjectOfferings({
     page: 1,
@@ -169,7 +182,7 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
       } else {
         await createMut.mutateAsync({
           ...values,
-          status: 'draft',
+          status: values.teacherId ? 'assigned' : 'draft',
         });
       }
       onClose();
@@ -256,6 +269,32 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
               />
             </Field>
           ) : null}
+          <Field
+            label={t('streams.fields.teacher')}
+            error={errors.teacherId?.message}
+          >
+            <Controller
+              name="teacherId"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(v) => field.onChange(v ?? null)}
+                  onBlur={field.onBlur}
+                  aria-invalid={Boolean(errors.teacherId)}
+                  placeholder={t('streams.no_teacher')}
+                  clearable
+                  options={
+                    teachersList?.items.map((teacher) => ({
+                      value: teacher.id,
+                      label: teacher.fullName,
+                      description: teacher.position,
+                    })) ?? []
+                  }
+                />
+              )}
+            />
+          </Field>
         </div>
 
         <div>

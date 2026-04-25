@@ -18,7 +18,7 @@ export interface TeacherAssignedWorkloadRow {
 /** GET /api/teacher/profile */
 export interface TeacherModuleProfile {
   fullName: string;
-  degree: 'PhD' | 'NoDegree';
+  degree: 'PhD' | 'DSc' | 'NoDegree';
   annualNorm: number;
   position: string;
   degreeName: string;

@@ -34,6 +34,7 @@ const PHD_CAPPED_TYPES: WorkloadType[] = [
   'phd_supervision_parttime',
   'scientific_pedagogical',
   'scientific_internship',
+  'master_dissertation_supervision',
 ];
 
 const include = {
@@ -63,7 +64,17 @@ const include = {
     select: { id: true, language: true, totalStudentCount: true, status: true },
   },
   group: {
-    select: { id: true, name: true, language: true, studentCount: true },
+    select: {
+      id: true,
+      name: true,
+      language: true,
+      studentCount: true,
+      academicTerm: true,
+      semesterNumber: true,
+      courseYear: true,
+      level: true,
+      studyType: true,
+    },
   },
   assignedTeacher: {
     select: {
@@ -159,6 +170,7 @@ export class WorkloadService {
     }
     const context = await this.resolveContext(dto);
     this.assertStudentCap(dto.workloadType as WorkloadType, context.studentCount);
+    this.assertWorkloadTypePlacement(dto.workloadType as WorkloadType, context);
     await this.assertNoDuplicateWorkloadItem(dto);
     const plannedHours = await this.computePlannedHours({
       workloadType: dto.workloadType,
@@ -186,6 +198,11 @@ export class WorkloadService {
         groupId: dto.groupId ?? null,
         workloadType: dto.workloadType,
         category: categoryOf(dto.workloadType as WorkloadType),
+        academicTerm: context.academicTerm,
+        semesterNumber: context.semesterNumber,
+        courseYear: context.courseYear,
+        level: context.level,
+        studyType: context.studyType,
         studentCount: context.studentCount,
         plannedHours: effectiveHours,
         formulaConfigId: plannedHours.formulaId,
@@ -579,7 +596,12 @@ export class WorkloadService {
     return {
       teacher: {
         ...teacher,
-        degree: teacher.hasScientificDegree ? 'PhD' : 'NoDegree',
+        degree:
+          teacher.degreeName === 'DSc'
+            ? 'DSc'
+            : teacher.hasScientificDegree
+              ? 'PhD'
+              : 'NoDegree',
       },
       assignedWorkloads: items,
       totals: {
@@ -672,6 +694,9 @@ export class WorkloadService {
 
     let level: 'bachelor' | 'master' = 'bachelor';
     let studyType: 'full_time' | 'part_time' = 'full_time';
+    let academicTerm: 'fall' | 'spring' | null = dto.academicTerm ?? null;
+    let semesterNumber: number | null = dto.semesterNumber ?? null;
+    let courseYear: number | null = dto.courseYear ?? null;
     let studentCount = dto.studentCount ?? 0;
     let groupCount = 1;
 
@@ -683,6 +708,9 @@ export class WorkloadService {
           _count: { select: { groupLinks: true } },
           subjectOffering: {
             select: {
+              academicTerm: true,
+              semesterNumber: true,
+              courseYear: true,
               studyType: true,
               subject: { select: { level: true } },
             },
@@ -696,22 +724,38 @@ export class WorkloadService {
       }
       level = stream.subjectOffering.subject.level;
       studyType = stream.subjectOffering.studyType;
+      academicTerm = stream.subjectOffering.academicTerm;
+      semesterNumber = stream.subjectOffering.semesterNumber;
+      courseYear = stream.subjectOffering.courseYear;
       groupCount = Math.max(1, stream._count.groupLinks);
       if (!studentCount) studentCount = stream.totalStudentCount;
     } else if (dto.groupId) {
       const group = await this.prisma.group.findUnique({
         where: { id: dto.groupId },
-        select: { level: true, studyType: true, studentCount: true },
+        select: {
+          level: true,
+          studyType: true,
+          studentCount: true,
+          academicTerm: true,
+          semesterNumber: true,
+          courseYear: true,
+        },
       });
       if (!group) throw new BadRequestException(`Group ${dto.groupId} not found`);
       level = group.level;
       studyType = group.studyType;
+      academicTerm = group.academicTerm;
+      semesterNumber = group.semesterNumber;
+      courseYear = group.courseYear;
       groupCount = 1;
       if (!studentCount) studentCount = group.studentCount;
     } else if (dto.subjectOfferingId) {
       const off = await this.prisma.subjectOffering.findUnique({
         where: { id: dto.subjectOfferingId },
         select: {
+          academicTerm: true,
+          semesterNumber: true,
+          courseYear: true,
           studyType: true,
           subject: { select: { level: true } },
         },
@@ -723,13 +767,69 @@ export class WorkloadService {
       }
       level = off.subject.level;
       studyType = off.studyType;
+      academicTerm = off.academicTerm;
+      semesterNumber = off.semesterNumber;
+      courseYear = off.courseYear;
       const g = await this.prisma.subjectOfferingGroup.count({
         where: { subjectOfferingId: dto.subjectOfferingId },
       });
       groupCount = Math.max(1, g);
+    } else {
+      level = dto.level ?? level;
+      studyType = dto.studyType ?? studyType;
     }
 
-    return { studentCount, level, studyType, groupCount };
+    return {
+      studentCount,
+      level,
+      studyType,
+      academicTerm,
+      semesterNumber,
+      courseYear,
+      groupCount,
+    };
+  }
+
+  private assertWorkloadTypePlacement(
+    workloadType: WorkloadType,
+    context: {
+      level: 'bachelor' | 'master';
+      courseYear: number | null;
+      semesterNumber: number | null;
+    },
+  ) {
+    const fail = (message: string) => {
+      throw new BadRequestException(message);
+    };
+
+    if (
+      (workloadType === 'VQR_full_time' || workloadType === 'VQR_part_time') &&
+      context.courseYear !== 4
+    ) {
+      fail('Bitiruv malakaviy ish faqat 4-kurs uchun.');
+    }
+    if (workloadType === 'internship' && context.courseYear !== 3) {
+      fail('Ishlab chiqarish amaliyoti faqat 3-kurs uchun.');
+    }
+    if (workloadType === 'prediploma' && context.courseYear !== 4) {
+      fail('Bitiruv oldi amaliyoti faqat 4-kurs uchun.');
+    }
+    if (
+      workloadType === 'scientific_pedagogical' &&
+      (context.level !== 'master' ||
+        !context.semesterNumber ||
+        context.semesterNumber < 1 ||
+        context.semesterNumber > 3)
+    ) {
+      fail('Ilmiy pedagogik ish faqat magistr 1-3 semestrlar uchun.');
+    }
+    if (
+      (workloadType === 'scientific_internship' ||
+        workloadType === 'master_dissertation_supervision') &&
+      (context.level !== 'master' || context.semesterNumber !== 4)
+    ) {
+      fail('Bu yuklama faqat magistr 4-semestr uchun.');
+    }
   }
 
   /**
@@ -792,6 +892,7 @@ export class WorkloadService {
       phd_supervision_parttime: 'phd_supervision_parttime',
       scientific_pedagogical: 'scientific_pedagogical',
       scientific_internship: 'scientific_internship',
+      master_dissertation_supervision: 'master_dissertation_supervision',
     };
     const scope = scopeMap[workloadType];
     if (!scope) return null;

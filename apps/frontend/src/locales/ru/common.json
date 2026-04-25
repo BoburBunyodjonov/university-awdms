@@ -52,7 +52,8 @@
     "phd_supervision_fulltime": "Руководство PhD (очная)",
     "phd_supervision_parttime": "Руководство PhD (заочная)",
     "scientific_pedagogical": "Научно-педагогическая (канд. PhD)",
-    "scientific_internship": "Научная стажировка (PhD)"
+    "scientific_internship": "Научная стажировка (PhD)",
+    "master_dissertation_supervision": "Руководство магистерской диссертацией"
   },
   "calculationMode": {
     "coefficient_based": "Коэффициентный",
@@ -140,7 +141,7 @@
       "fullName": "ФИО",
       "position": "Должность",
       "degreeName": "Учёная степень",
-      "degreeName_hint": "Напр.: PhD, доцент",
+      "degreeName_hint": "Варианты: нет учёной степени, PhD, DSc",
       "annualNorm": "Годовая норма (часов)",
       "hasScientificDegree": "Имеет учёную степень",
       "isActive": "Активен",

@@ -51,6 +51,9 @@ export interface WorkloadItemWithRelations extends WorkloadItem {
       name: string;
       code: string | null;
       level: StudyLevel;
+      lectureCoefficient: number;
+      controlCoefficient: number;
+      practiceCoefficient: number;
       direction: { id: string; name: string; code: string };
     };
   } | null;
@@ -65,6 +68,11 @@ export interface WorkloadItemWithRelations extends WorkloadItem {
     name: string;
     language: Language;
     studentCount: number;
+    academicTerm: AcademicTerm;
+    semesterNumber: number;
+    courseYear: number;
+    level: StudyLevel;
+    studyType: StudyType;
   } | null;
   assignedTeacher: {
     id: string;

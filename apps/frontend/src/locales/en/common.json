@@ -52,7 +52,8 @@
     "phd_supervision_fulltime": "PhD supervision (full-time)",
     "phd_supervision_parttime": "PhD supervision (part-time)",
     "scientific_pedagogical": "Scientific-pedagogical (PhD)",
-    "scientific_internship": "Scientific internship (PhD)"
+    "scientific_internship": "Scientific internship (PhD)",
+    "master_dissertation_supervision": "Master's dissertation supervision"
   },
   "calculationMode": {
     "coefficient_based": "Coefficient-based",
@@ -140,7 +141,7 @@
       "fullName": "Full name",
       "position": "Position",
       "degreeName": "Academic degree",
-      "degreeName_hint": "e.g. PhD in Computer Science, Associate Professor",
+      "degreeName_hint": "Options: No scientific degree, PhD, DSc",
       "annualNorm": "Annual norm (hours)",
       "hasScientificDegree": "Has scientific degree",
       "isActive": "Active",
