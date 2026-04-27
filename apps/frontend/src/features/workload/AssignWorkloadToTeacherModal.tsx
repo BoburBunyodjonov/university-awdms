@@ -1076,12 +1076,21 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
               </Field>
             ) : null}
 
-            {spec.students ? (
+            {spec.students &&
+            workloadType !== 'internship' &&
+            workloadType !== 'prediploma' ? (
               <Field
                 label={
-                  spec.studentsMax
-                    ? `${t('workload.assign_to_teacher.student_count')} * (max ${spec.studentsMax})`
-                    : `${t('workload.assign_to_teacher.student_count')} *`
+                  (() => {
+                    const countLabel =
+                      workloadType === 'phd_supervision_fulltime' ||
+                      workloadType === 'phd_supervision_parttime'
+                        ? "Doktorantlar soni"
+                        : t('workload.assign_to_teacher.student_count');
+                    return spec.studentsMax
+                      ? `${countLabel} * (max ${spec.studentsMax})`
+                      : `${countLabel} *`;
+                  })()
                 }
               >
                 <Input
