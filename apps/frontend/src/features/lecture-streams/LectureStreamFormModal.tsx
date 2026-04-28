@@ -1,5 +1,6 @@
-import { useEffect, useMemo } from 'react';
-import { Controller, useForm, useWatch } from 'react-hook-form';
+import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
 import { Languages, Users } from 'lucide-react';
@@ -10,15 +11,16 @@ import {
 } from '@awdms/shared';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { Field } from '@/components/ui/field';
+import { useDirections } from '@/features/directions/api';
 import { useSubjectOfferings } from '@/features/subject-offerings/api';
-import { useTeachers } from '@/features/teachers/api';
 import { api } from '@/lib/api';
 import { LIST_PAGE_SIZE_MAX } from '@/lib/pagination';
 import { useQuery } from '@tanstack/react-query';
 import {
-  useCreateStream,
+  useCreateStreams,
   useUpdateStream,
   type StreamWithRelations,
 } from './api';
@@ -31,6 +33,7 @@ interface Props {
 }
 
 const DEFAULTS: CreateLectureStreamInput = {
+  name: '',
   subjectOfferingId: '',
   language: 'uzbek',
   groupIds: [],
@@ -68,13 +71,12 @@ interface OfferingDetail {
 export function LectureStreamFormModal({ open, onClose, stream }: Props) {
   const { t } = useTranslation();
   const isEditing = Boolean(stream);
-  const createMut = useCreateStream();
+  const createManyMut = useCreateStreams();
   const updateMut = useUpdateStream(stream?.id ?? '');
-  const { data: teachersList } = useTeachers({
-    page: 1,
-    pageSize: LIST_PAGE_SIZE_MAX,
-    isActive: true,
-  });
+  const [selectedDirectionIds, setSelectedDirectionIds] = useState<string[]>([]);
+  const [selectedOfferingIds, setSelectedOfferingIds] = useState<string[]>([]);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const { data: directionsList } = useDirections();
 
   const { data: offeringsList } = useSubjectOfferings({
     page: 1,
@@ -94,6 +96,7 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
   });
 
   const offeringId = useWatch({ control, name: 'subjectOfferingId' });
+  const streamName = useWatch({ control, name: 'name' });
   const language = useWatch({ control, name: 'language' });
   const selectedGroupIds = useWatch({ control, name: 'groupIds' }) ?? [];
 
@@ -112,16 +115,40 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
 
   const candidateGroups = offeringDetail?.groupLinks.map((l) => l.group) ?? [];
 
+  const availableOfferings = useMemo(() => {
+    const items = offeringsList?.items ?? [];
+    if (!selectedDirectionIds.length) return items;
+    return items.filter((o) =>
+      selectedDirectionIds.includes(o.subject.directionId),
+    );
+  }, [offeringsList, selectedDirectionIds]);
+
+  const selectedOfferings = useMemo(
+    () => availableOfferings.filter((o) => selectedOfferingIds.includes(o.id)),
+    [availableOfferings, selectedOfferingIds],
+  );
+
+  const availableGroups = useMemo(() => {
+    const byId = new Map<string, OfferingGroupLink['group']>();
+    for (const offering of selectedOfferings) {
+      for (const link of offering.groupLinks) {
+        byId.set(link.group.id, link.group);
+      }
+    }
+    return [...byId.values()];
+  }, [selectedOfferings]);
+  const selectableGroups = isEditing ? candidateGroups : availableGroups;
+
   // The first group picked locks the language. Any subsequent group with a
   // different language is shown but disabled — so the user understands *why*
   // they can't pick it.
   const firstPickedLanguage: Language | null = useMemo(() => {
     if (!selectedGroupIds.length) return null;
-    const first = candidateGroups.find((g) =>
+    const first = selectableGroups.find((g) =>
       selectedGroupIds.includes(g.id),
     );
     return first?.language ?? null;
-  }, [selectedGroupIds, candidateGroups]);
+  }, [selectedGroupIds, selectableGroups]);
 
   // Sync the form's `language` field to whichever the first group has.
   useEffect(() => {
@@ -132,10 +159,10 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
 
   const totalStudents = useMemo(
     () =>
-      candidateGroups
+      selectableGroups
         .filter((g) => selectedGroupIds.includes(g.id))
         .reduce((n, g) => n + g.studentCount, 0),
-    [candidateGroups, selectedGroupIds],
+    [selectableGroups, selectedGroupIds],
   );
 
   useEffect(() => {
@@ -143,6 +170,7 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
       reset(
         stream
           ? {
+              name: stream.name,
               subjectOfferingId: stream.subjectOffering.id,
               language: stream.language,
               groupIds: stream.groupLinks.map((l) => l.groupId),
@@ -151,8 +179,16 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
             }
           : DEFAULTS,
       );
+      setSelectedDirectionIds(
+        stream ? [stream.subjectOffering.subject.directionId] : [],
+      );
+      setSelectedOfferingIds(stream ? [stream.subjectOffering.id] : []);
+      if (!stream) {
+        setValue('groupIds', [], { shouldDirty: false });
+      }
+      setCreateError(null);
     }
-  }, [open, stream, reset]);
+  }, [open, stream, reset, setValue]);
 
   // Switching the offering invalidates the current group selection, since
   // groups are offering-scoped.
@@ -170,19 +206,102 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
     setValue('groupIds', next, { shouldDirty: true });
   };
 
+  const handleDirectionChange = (next: string[]) => {
+    setSelectedDirectionIds(next);
+    setSelectedOfferingIds((offeringIds) => {
+      const filtered = offeringIds.filter((offeringId) => {
+        const offering = offeringsList?.items.find((o) => o.id === offeringId);
+        return offering ? next.includes(offering.subject.directionId) : false;
+      });
+      if (isEditing && !filtered.length) {
+        setValue('subjectOfferingId', '', { shouldDirty: true });
+      }
+      return filtered;
+    });
+    setValue('groupIds', [], { shouldDirty: true });
+  };
+
+  const handleOfferingChange = (next: string[]) => {
+    const selected = isEditing ? next.slice(-1) : next;
+    setSelectedOfferingIds(selected);
+    if (isEditing) {
+      setValue('subjectOfferingId', selected[0] ?? '', { shouldDirty: true });
+    }
+    setValue('groupIds', [], { shouldDirty: true });
+  };
+
+  const handleCreateSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const name = streamName?.trim() ?? '';
+    if (!name) {
+      setCreateError(t('streams.validation.name_required'));
+      return;
+    }
+    if (!selectedDirectionIds.length) {
+      setCreateError(t('streams.validation.directions_required'));
+      return;
+    }
+    if (!selectedOfferings.length) {
+      setCreateError(t('streams.validation.subjects_required'));
+      return;
+    }
+    if (!selectedGroupIds.length) {
+      setCreateError(t('streams.validation.groups_required'));
+      return;
+    }
+
+    const offeringsWithoutGroups: string[] = [];
+    const inputs = selectedOfferings.flatMap((offering) => {
+      const linkedSelectedGroups = offering.groupLinks.filter((link) =>
+        selectedGroupIds.includes(link.groupId),
+      );
+      if (!linkedSelectedGroups.length) {
+        offeringsWithoutGroups.push(offering.subject.name);
+        return [];
+      }
+      const groupsByLanguage = linkedSelectedGroups.reduce<
+        Record<Language, string[]>
+      >(
+        (acc, link) => {
+          acc[link.group.language].push(link.groupId);
+          return acc;
+        },
+        { uzbek: [], russian: [] },
+      );
+      return (Object.entries(groupsByLanguage) as [Language, string[]][])
+        .filter(([, groupIds]) => groupIds.length > 0)
+        .map(([language, groupIds]) => ({
+          name,
+          subjectOfferingId: offering.id,
+          language,
+          groupIds,
+          teacherId: null,
+          status: 'draft' as const,
+        }));
+    });
+
+    if (offeringsWithoutGroups.length) {
+      setCreateError(t('streams.validation.groups_match_required'));
+      return;
+    }
+
+    setCreateError(null);
+    try {
+      await createManyMut.mutateAsync(inputs);
+      onClose();
+    } catch {
+      /* hook toasts the error; keep modal open */
+    }
+  };
+
   const onSubmit = async (values: CreateLectureStreamInput) => {
     try {
       if (isEditing) {
         await updateMut.mutateAsync({
+          name: values.name,
+          subjectOfferingId: values.subjectOfferingId,
           language: values.language,
           groupIds: values.groupIds,
-          teacherId: values.teacherId ?? null,
-          status: values.status,
-        });
-      } else {
-        await createMut.mutateAsync({
-          ...values,
-          status: values.teacherId ? 'assigned' : 'draft',
         });
       }
       onClose();
@@ -205,7 +324,9 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
           <Button
             type="submit"
             form="stream-form"
-            loading={createMut.isPending || updateMut.isPending}
+            loading={
+              isEditing ? updateMut.isPending : createManyMut.isPending
+            }
           >
             {isEditing ? t('common.save') : t('common.create')}
           </Button>
@@ -215,86 +336,56 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
       <form
         id="stream-form"
         className="space-y-4"
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={isEditing ? handleSubmit(onSubmit) : handleCreateSubmit}
         noValidate
       >
         <div className="grid grid-cols-2 gap-3">
-          <Field
-            label={t('streams.fields.offering')}
-            error={errors.subjectOfferingId?.message}
-          >
-            <Controller
-              name="subjectOfferingId"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={(v) => field.onChange(v ?? '')}
-                  onBlur={field.onBlur}
-                  disabled={isEditing}
-                  aria-invalid={Boolean(errors.subjectOfferingId)}
-                  placeholder={t('streams.pick_offering')}
-                  options={
-                    offeringsList?.items.map((o) => ({
-                      value: o.id,
-                      label: o.subject.name,
-                      description: `${o.subject.direction.code} · Y${o.courseYear} · S${o.semesterNumber} · ${t(`academicTerm.${o.academicTerm}`)}`,
-                    })) ?? []
-                  }
-                />
-              )}
+          <Field label={t('streams.fields.name')} error={errors.name?.message}>
+            <Input
+              autoFocus
+              placeholder={t('streams.name_placeholder')}
+              {...register('name')}
             />
           </Field>
-          {isEditing ? (
-            <Field
-              label={t('streams.fields.status')}
-              error={errors.status?.message}
-            >
-              <Controller
-                name="status"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={(v) => field.onChange(v)}
-                    onBlur={field.onBlur}
-                    aria-invalid={Boolean(errors.status)}
-                    options={[
-                      { value: 'draft', label: t('status.draft') },
-                      { value: 'ready', label: t('status.ready') },
-                      { value: 'assigned', label: t('status.assigned') },
-                    ]}
-                  />
-                )}
+
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+            <Field label={t('streams.fields.directions')}>
+              <MultiSelect
+                value={selectedDirectionIds}
+                onValueChange={handleDirectionChange}
+                placeholder={t('streams.pick_directions')}
+                options={
+                  directionsList?.items.map((direction) => ({
+                    value: direction.id,
+                    label: direction.name,
+                    description: direction.code,
+                  })) ?? []
+                }
               />
             </Field>
-          ) : null}
-          <Field
-            label={t('streams.fields.teacher')}
-            error={errors.teacherId?.message}
-          >
-            <Controller
-              name="teacherId"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={(v) => field.onChange(v ?? null)}
-                  onBlur={field.onBlur}
-                  aria-invalid={Boolean(errors.teacherId)}
-                  placeholder={t('streams.no_teacher')}
-                  clearable
-                  options={
-                    teachersList?.items.map((teacher) => ({
-                      value: teacher.id,
-                      label: teacher.fullName,
-                      description: teacher.position,
-                    })) ?? []
-                  }
-                />
-              )}
-            />
-          </Field>
+
+            <Field label={t('streams.fields.subjects')}>
+              <MultiSelect
+                value={selectedOfferingIds}
+                onValueChange={handleOfferingChange}
+                disabled={!selectedDirectionIds.length}
+                aria-label={t('streams.fields.subjects')}
+                placeholder={t('streams.pick_subjects')}
+                emptyContent={
+                  selectedDirectionIds.length
+                    ? t('streams.no_subjects')
+                    : t('streams.pick_direction_first')
+                }
+                options={availableOfferings.map((offering) => ({
+                  value: offering.id,
+                  label: offering.subject.name,
+                  description: `${offering.subject.direction.code} · Y${offering.courseYear} · S${offering.semesterNumber} · ${t(`academicTerm.${offering.academicTerm}`)} · ${offering.groupLinks.length} ${t('offerings.fields.groups')}`,
+                }))}
+              />
+            </Field>
+
         </div>
 
         <div>
@@ -320,18 +411,22 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
             </div>
           </div>
 
-          {!offeringId ? (
+          {isEditing && !offeringId ? (
             <div className="rounded-md border border-dashed border-zinc-300 bg-zinc-50 p-3 text-xs text-zinc-500">
               {t('streams.pick_offering_first')}
             </div>
-          ) : !candidateGroups.length ? (
+          ) : !isEditing && !selectedOfferingIds.length ? (
+            <div className="rounded-md border border-dashed border-zinc-300 bg-zinc-50 p-3 text-xs text-zinc-500">
+              {t('streams.pick_subject_first')}
+            </div>
+          ) : !selectableGroups.length ? (
             <div className="rounded-md border border-dashed border-zinc-300 bg-zinc-50 p-3 text-xs text-zinc-500">
               {t('streams.no_groups')}
             </div>
           ) : (
             <div className="max-h-64 overflow-auto rounded-md border border-zinc-200 bg-white">
               <ul className="divide-y divide-zinc-100">
-                {candidateGroups.map((g) => {
+                {selectableGroups.map((g) => {
                   const checked = selectedGroupIds.includes(g.id);
                   const disabled =
                     firstPickedLanguage !== null &&
@@ -405,6 +500,12 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
             </div>
           ) : null}
         </div>
+
+        {createError ? (
+          <p className="text-xs text-red-600" role="alert">
+            {createError}
+          </p>
+        ) : null}
 
         <input type="hidden" {...register('language')} />
 

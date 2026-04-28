@@ -267,7 +267,9 @@ export function TeacherDashboardPage() {
                   {i.group
                     ? i.group.name
                     : i.lectureStream
-                      ? `${t('workload.stream_of')} ${i.lectureStream.totalStudentCount}`
+                      ? `${i.lectureStream.name || t('workload.stream_of')} · ${
+                          i.lectureStream.totalStudentCount
+                        }`
                       : '—'}
                 </Td>
                 <Td className="text-right tabular-nums">

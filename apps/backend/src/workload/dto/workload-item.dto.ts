@@ -50,6 +50,7 @@ export const WorkloadQuerySchema = z.object({
   assignedTeacherId: z.string().uuid().optional(),
   academicTerm: AcademicTermEnum.optional(),
   workloadType: WorkloadTypeEnum.optional(),
+  includeControlWithLecture: z.coerce.boolean().optional(),
   category: WorkloadCategoryEnum.optional(),
   status: AssignmentStatusEnum.optional(),
   unassignedOnly: z.coerce.boolean().optional(),

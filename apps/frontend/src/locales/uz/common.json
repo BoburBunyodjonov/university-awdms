@@ -69,6 +69,7 @@
     "unassigned": "Biriktirish olib tashlandi",
     "generated": "{{created}} ta yangi element yaratildi · {{skipped}} ta o'tkazib yuborildi",
     "stream_created": "Potok yaratildi",
+    "streams_created": "{{count}} ta potok yaratildi",
     "stream_updated": "Potok yangilandi",
     "subjects_created_batch": "«{{name}}» {{count}} ta yo'nalish uchun yaratildi"
   },
@@ -175,14 +176,14 @@
     "confirm_delete": "{{name}} guruhini o'chirishmi? Agar fan, potok yoki yuklamaga bog'langan bo'lsa, amal bajarilmaydi.",
     "fields": {
       "name": "Guruh nomi",
-      "direction": "Yo'nalish",
+      "direction": "Ta'lim Yo'nalishi",
       "level_studyType": "Daraja / Ta'lim turi",
       "courseYear": "Kurs",
       "semester": "Semestr",
       "semesterNumber": "Semestr raqami",
       "academicTerm": "Mavsum",
       "language": "Til",
-      "studentCount": "Talabalar",
+      "studentCount": "Talabalar soni",
       "studyType": "Ta'lim turi"
     }
   },
@@ -239,17 +240,27 @@
     "edit_title": "Ma'ruza potokini tahrirlash",
     "total_suffix": "potok",
     "all_statuses": "Hamma holatlar",
+    "name_placeholder": "Masalan: 1-potok",
+    "pick_directions": "Ta'lim yo'nalishlarini tanlang…",
+    "pick_subjects": "Fanlarni tanlang…",
+    "pick_groups": "Guruhlarni tanlang…",
     "pick_offering": "Fan yuklamasini tanlang…",
+    "pick_direction_first": "Avval ta'lim yo'nalishini tanlang, keyin fanlar ko'rinadi.",
+    "pick_subject_first": "Avval fanni tanlang, keyin guruhlar ko'rinadi.",
     "pick_offering_first": "Avval fan yuklamasini tanlang, keyin guruhlar ko'rinadi.",
     "pick_first_hint": "Birinchi guruhni tanlang — potok tili shunga qarab qulflanadi.",
     "locked_language": "Til {{lang}}ga qulflandi",
     "different_language": "Boshqa til",
     "no_groups": "Ushbu yuklamaga bog'langan guruh yo'q.",
+    "no_subjects": "Tanlangan yo'nalishlarda fan yuklamasi yo'q.",
     "no_teacher": "— biriktirilmagan —",
     "total_students": "{{count}} talaba",
     "group_count": "{{count}} guruh",
     "confirm_delete": "{{name}} potokini o'chirishmi? Yuklamaga bog'langan bo'lsa, amal bajarilmaydi.",
     "fields": {
+      "name": "Potok nomi",
+      "directions": "Ta'lim Yo'nalishi",
+      "subjects": "Fan biriktirish",
       "offering": "Fan yuklamasi",
       "subject": "Fan",
       "placement": "Joylashuv",
@@ -258,6 +269,13 @@
       "students": "Talabalar",
       "teacher": "O'qituvchi",
       "status": "Holati"
+    },
+    "validation": {
+      "name_required": "Potok nomini kiriting.",
+      "directions_required": "Kamida bitta ta'lim yo'nalishini tanlang.",
+      "subjects_required": "Kamida bitta fanni tanlang.",
+      "groups_required": "Kamida bitta guruhni tanlang.",
+      "groups_match_required": "Har bir tanlangan fan uchun kamida bitta mos guruh tanlangan bo'lishi kerak."
     }
   },
   "category": {

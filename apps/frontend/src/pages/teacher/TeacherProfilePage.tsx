@@ -402,7 +402,7 @@ function TermSection({
                 {i.group
                   ? i.group.name
                   : i.lectureStream
-                    ? `${t('workload.stream_badge')} · ${
+                    ? `${i.lectureStream.name || t('workload.stream_badge')} · ${
                         i.lectureStream.totalStudentCount
                       } ${t('workload.stream_students')}`
                     : '—'}

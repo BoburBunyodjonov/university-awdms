@@ -126,6 +126,7 @@ export class LectureStreamsService {
         const w = this.subjectStreamHourWeights(offering.subject);
         const stream = await tx.lectureStream.create({
           data: {
+            name: dto.name,
             subjectOfferingId: offering.id,
             language,
             totalStudentCount,
@@ -165,7 +166,7 @@ export class LectureStreamsService {
     const current = await this.findOne(id);
 
     // Resolve the final state after the patch, then re-validate holistically.
-    const offeringId = current.subjectOfferingId;
+    const offeringId = dto.subjectOfferingId ?? current.subjectOfferingId;
     const language = dto.language ?? current.language;
     const groupIds =
       dto.groupIds ?? current.groupLinks.map((l) => l.groupId);
@@ -181,6 +182,8 @@ export class LectureStreamsService {
         const stream = await tx.lectureStream.update({
           where: { id },
           data: {
+            name: dto.name,
+            subjectOfferingId: offering.id,
             language,
             totalStudentCount,
             lectureHours: totalStudentCount * w.lecture,
@@ -189,7 +192,7 @@ export class LectureStreamsService {
             status: dto.status,
           },
         });
-        if (dto.groupIds) {
+        if (dto.groupIds || dto.subjectOfferingId) {
           await tx.streamGroup.deleteMany({ where: { streamId: id } });
           await tx.streamGroup.createMany({
             data: groups.map((g) => ({

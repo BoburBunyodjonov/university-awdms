@@ -98,6 +98,32 @@ export function useCreateStream() {
   });
 }
 
+export function useCreateStreams() {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (inputs: CreateLectureStreamInput[]) => {
+      const results = await Promise.all(
+        inputs.map(async (input) => {
+          const { data } = await api.post<StreamWithRelations>(
+            '/streams',
+            input,
+          );
+          return data;
+        }),
+      );
+      return results;
+    },
+    onSuccess: (streams) => {
+      qc.invalidateQueries({ queryKey: ['lecture-streams'] });
+      toast.success(
+        t('toasts.streams_created', { count: streams.length }),
+      );
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
+  });
+}
+
 export function useUpdateStream(id: string) {
   const { t } = useTranslation();
   const qc = useQueryClient();

@@ -61,7 +61,13 @@ const include = {
     },
   },
   lectureStream: {
-    select: { id: true, language: true, totalStudentCount: true, status: true },
+    select: {
+      id: true,
+      name: true,
+      language: true,
+      totalStudentCount: true,
+      status: true,
+    },
   },
   group: {
     select: {
@@ -118,7 +124,11 @@ export class WorkloadService {
       ...(q.assignedTeacherId
         ? { assignedTeacherId: q.assignedTeacherId }
         : {}),
-      ...(q.workloadType ? { workloadType: q.workloadType } : {}),
+      ...(q.workloadType
+        ? q.workloadType === 'lecture' && q.includeControlWithLecture
+          ? { workloadType: { in: ['lecture', 'control'] } }
+          : { workloadType: q.workloadType }
+        : {}),
       ...(q.academicTerm
         ? { subjectOffering: { is: { academicTerm: q.academicTerm } } }
         : {}),

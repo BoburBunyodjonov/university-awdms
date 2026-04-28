@@ -297,14 +297,6 @@ export function AdminTeacherProfilePage() {
         items={springItems}
         isLoading={isLoading}
       />
-      {unknownTermItems.length > 0 ? (
-        <TermWorkloadTable
-          title={t('workload.unknown_term')}
-          hint={t('workload.unknown_term_hint')}
-          items={unknownTermItems}
-          isLoading={isLoading}
-        />
-      ) : null}
 
       <AssignWorkloadToTeacherModal
         open={assignOpen}
@@ -373,9 +365,11 @@ function TermWorkloadTable({
                 {i.group
                   ? i.group.name
                   : i.lectureStream
-                    ? `${t('workload.stream_badge')} · ${i.lectureStream.language} · ${
-                        i.lectureStream.totalStudentCount
-                      } ${t('workload.stream_students')}`
+                    ? `${i.lectureStream.name || t('workload.stream_badge')} · ${
+                        i.lectureStream.language
+                      } · ${i.lectureStream.totalStudentCount} ${t(
+                        'workload.stream_students',
+                      )}`
                     : '—'}
               </Td>
               <Td className="text-right tabular-nums">

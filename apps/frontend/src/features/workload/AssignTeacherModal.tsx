@@ -180,7 +180,9 @@ export function AssignTeacherModal({ open, onClose, item }: Props) {
               </p>
               <p className="mt-0.5 truncate text-xs font-semibold text-zinc-800">
                 {item.lectureStream
-                  ? `Oqim · ${item.lectureStream.totalStudentCount}`
+                  ? `${item.lectureStream.name || 'Oqim'} · ${
+                      item.lectureStream.totalStudentCount
+                    }`
                   : item.group?.name ?? '—'}
               </p>
             </div>

@@ -5,6 +5,7 @@ import { LanguageEnum, StreamStatusEnum } from './enums';
 // The schema accepts a single `language`; the backend enforces that every linked
 // group's language matches it.
 export const CreateLectureStreamSchema = z.object({
+  name: z.string().trim().min(1).max(120),
   subjectOfferingId: z.string().uuid(),
   language: LanguageEnum,
   groupIds: z.array(z.string().uuid()).min(1),
@@ -17,6 +18,8 @@ export type CreateLectureStreamInput = z.infer<
 
 export const UpdateLectureStreamSchema = z
   .object({
+    name: z.string().trim().min(1).max(120).optional(),
+    subjectOfferingId: z.string().uuid().optional(),
     language: LanguageEnum.optional(),
     groupIds: z.array(z.string().uuid()).min(1).optional(),
     teacherId: z.string().uuid().nullable().optional(),

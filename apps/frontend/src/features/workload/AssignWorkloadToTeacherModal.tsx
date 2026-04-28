@@ -254,7 +254,7 @@ interface ComputeResult {
 }
 
 interface LectureStreamCalc {
-  lectureHours: number;
+  lectureCoefficient: number;
   totalStudentCount: number;
   controlCoefficient: number;
 }
@@ -284,7 +284,7 @@ function computeHours(
   if (type === 'lecture') {
     if (linked.selectedStreams?.length) {
       const lectureHours = linked.selectedStreams.reduce(
-        (n, stream) => n + stream.lectureHours,
+        (n, stream) => n + stream.lectureCoefficient,
         0,
       );
       const controlHours = linked.selectedStreams.reduce(
@@ -299,13 +299,20 @@ function computeHours(
       const coefficients = [
         ...new Set(linked.selectedStreams.map((stream) => stream.controlCoefficient)),
       ];
+      const lectureCoefficients = [
+        ...new Set(linked.selectedStreams.map((stream) => stream.lectureCoefficient)),
+      ];
       const formulaText =
-        coefficients.length === 1
-          ? `${roundHours(lectureHours)} + ${studentCount} × ${coefficients[0]}`
+        coefficients.length === 1 && lectureCoefficients.length === 1
+          ? `${coefficients[0]} × ${studentCount} + ${
+              linked.selectedStreams.length > 1
+                ? `${linked.selectedStreams.length} × ${lectureCoefficients[0]}`
+                : lectureCoefficients[0]
+            }`
           : linked.selectedStreams
               .map(
                 (stream) =>
-                  `${roundHours(stream.lectureHours)} + ${stream.totalStudentCount} × ${stream.controlCoefficient}`,
+                  `${stream.controlCoefficient} × ${stream.totalStudentCount} + ${stream.lectureCoefficient}`,
               )
               .join(' + ');
       return {
@@ -314,12 +321,12 @@ function computeHours(
       };
     }
 
-    const lectureHours = linked.lectureHours ?? f;
+    const lectureHours = linked.lectureCoefficient ?? linked.lectureHours ?? f;
     const students = linked.streamStudents ?? s;
     const controlCoefficient = linked.controlCoefficient ?? c;
     return {
       hours: lectureHours + students * controlCoefficient,
-      text: `${roundHours(lectureHours)} + ${students} × ${controlCoefficient}`,
+      text: `${controlCoefficient} × ${students} + ${lectureHours}`,
     };
   }
   if (type === 'practice') {
@@ -473,13 +480,18 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
     () => selectedMultiGroups.reduce((n, g) => n + g.studentCount, 0),
     [selectedMultiGroups],
   );
+  const termStreamOptions = useMemo(
+    () =>
+      (streamsData?.items ?? []).filter(
+        (stream) => stream.subjectOffering.academicTerm === academicTerm,
+      ),
+    [academicTerm, streamsData?.items],
+  );
   const streamOptions = useMemo(() => {
-    const streams = (streamsData?.items ?? []).filter(
-      (stream) => stream.subjectOffering.academicTerm === academicTerm,
-    );
+    const streams = termStreamOptions;
     if (!form.subjectId) return streams;
     return streams.filter((s) => s.subjectOffering.subject.id === form.subjectId);
-  }, [academicTerm, form.subjectId, streamsData?.items]);
+  }, [form.subjectId, termStreamOptions]);
   const subjectOptions = useMemo(() => {
     const byId = new Map<
       string,
@@ -487,7 +499,7 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
     >();
 
     if (workloadType === 'lecture') {
-      for (const stream of streamOptions) {
+      for (const stream of termStreamOptions) {
         const subject = stream.subjectOffering.subject;
         if (!byId.has(subject.id)) {
           byId.set(subject.id, {
@@ -511,11 +523,11 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
     }
 
     return [...byId.values()];
-  }, [offeringsData?.items, streamOptions, workloadType]);
+  }, [offeringsData?.items, termStreamOptions, workloadType]);
   const selectedLectureStreamsForCalc = useMemo(
     () =>
       selectedStreams.map((stream) => ({
-        lectureHours: stream.lectureHours,
+        lectureCoefficient: stream.subjectOffering.subject.lectureCoefficient,
         totalStudentCount: stream.totalStudentCount,
         controlCoefficient: stream.subjectOffering.subject.controlCoefficient,
       })),
@@ -607,6 +619,7 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
       return { hours: 0, text: t('workload.assign_to_teacher.pick_type') };
     return computeHours(workloadType, form, (wt) => t(`workloadType.${wt}`), {
       lectureHours: selectedStream?.lectureHours,
+      lectureCoefficient: selectedSubject?.lectureCoefficient,
       controlCoefficient: selectedSubject?.controlCoefficient,
       streamStudents: selectedStream?.totalStudentCount,
       selectedStreams: selectedLectureStreamsForCalc,
@@ -621,6 +634,7 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
     selectedStream?.lectureHours,
     selectedStream?.totalStudentCount,
     selectedLectureStreamsForCalc,
+    selectedSubject?.lectureCoefficient,
     selectedSubject?.controlCoefficient,
     selectedSubject?.practiceCoefficient,
     selectedGroupStudentCount,
@@ -690,9 +704,9 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
       try {
         for (const stream of selectedStreams) {
           const plannedHours =
-            stream.lectureHours +
             stream.totalStudentCount *
-              stream.subjectOffering.subject.controlCoefficient;
+              stream.subjectOffering.subject.controlCoefficient +
+            stream.subjectOffering.subject.lectureCoefficient;
           await createMut.mutateAsync({
             academicYearId: effectiveYearId,
             subjectOfferingId: stream.subjectOffering.id,
@@ -961,7 +975,9 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
                       options={
                         streamsData?.items.map((s) => ({
                           value: s.id,
-                          label: `${s.language} · ${s.totalStudentCount} ${t('workload.stream_students')}`,
+                          label: `${s.name || t('workload.stream_badge')} · ${
+                            s.totalStudentCount
+                          } ${t('workload.stream_students')}`,
                         })) ?? []
                       }
                     />
@@ -980,8 +996,16 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
                   placeholder={t('workload.assign_to_teacher.pick_stream')}
                   options={streamOptions.map((s) => ({
                     value: s.id,
-                    label: `${s.subjectOffering.subject.name} · ${t(`language.${s.language}`)}`,
-                    description: `${s.totalStudentCount} ${t('workload.stream_students')} · ${roundHours(s.lectureHours)} + ${roundHours(s.controlHours)} ${t('workload.assign_to_teacher.hours_short')}`,
+                    label: `${s.name || s.subjectOffering.subject.name} · ${t(
+                      `language.${s.language}`,
+                    )}`,
+                    description: `${s.totalStudentCount} ${t(
+                      'workload.stream_students',
+                    )} · ${
+                      s.subjectOffering.subject.controlCoefficient
+                    } × ${s.totalStudentCount} + ${
+                      s.subjectOffering.subject.lectureCoefficient
+                    } ${t('workload.assign_to_teacher.hours_short')}`,
                   }))}
                 />
               </Field>
@@ -1002,8 +1026,16 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
                   }
                   options={streamOptions.map((s) => ({
                     value: s.id,
-                    label: `${s.subjectOffering.subject.name} · ${t(`language.${s.language}`)}`,
-                    description: `${s.totalStudentCount} ${t('workload.stream_students')} · ${roundHours(s.lectureHours)} + ${roundHours(s.controlHours)} ${t('workload.assign_to_teacher.hours_short')}`,
+                    label: `${s.name || s.subjectOffering.subject.name} · ${t(
+                      `language.${s.language}`,
+                    )}`,
+                    description: `${s.totalStudentCount} ${t(
+                      'workload.stream_students',
+                    )} · ${
+                      s.subjectOffering.subject.controlCoefficient
+                    } × ${s.totalStudentCount} + ${
+                      s.subjectOffering.subject.lectureCoefficient
+                    } ${t('workload.assign_to_teacher.hours_short')}`,
                   }))}
                 />
               </Field>

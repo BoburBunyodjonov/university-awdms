@@ -1,16 +1,10 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Languages, Pencil, Plus, Trash2, Users } from 'lucide-react';
-import type {
-  AssignmentStatus,
-  Language,
-  StreamStatus,
-} from '@awdms/shared';
-import { STATUS_COLOR } from '@awdms/shared';
+import type { Language, StreamStatus } from '@awdms/shared';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { DataTable, Td, Th } from '@/components/ui/table';
-import { StatusBadge } from '@/components/ui/badge';
 import { useDirections } from '@/features/directions/api';
 import {
   useDeleteStream,
@@ -45,7 +39,9 @@ export function LectureStreamsPage() {
   const handleDelete = async (s: StreamWithRelations) => {
     if (
       !confirm(
-        t('streams.confirm_delete', { name: s.subjectOffering.subject.name }),
+        t('streams.confirm_delete', {
+          name: s.name || s.subjectOffering.subject.name,
+        }),
       )
     )
       return;
@@ -160,19 +156,21 @@ export function LectureStreamsPage() {
       >
         <thead>
           <tr>
+            <Th>{t('streams.fields.name')}</Th>
             <Th>{t('streams.fields.subject')}</Th>
             <Th>{t('streams.fields.placement')}</Th>
             <Th>{t('streams.fields.language')}</Th>
             <Th>{t('streams.fields.groups')}</Th>
             <Th className="text-right">{t('streams.fields.students')}</Th>
-            <Th>{t('streams.fields.teacher')}</Th>
-            <Th>{t('streams.fields.status')}</Th>
             <Th className="text-right">{t('common.actions')}</Th>
           </tr>
         </thead>
         <tbody>
           {data?.items.map((s) => (
             <tr key={s.id} className="hover:bg-zinc-50">
+              <Td className="font-medium text-zinc-900">
+                {s.name || s.subjectOffering.subject.name}
+              </Td>
               <Td className="font-medium text-zinc-900">
                 {s.subjectOffering.subject.name}
                 <div className="text-[10px] font-normal text-zinc-500">
@@ -220,20 +218,6 @@ export function LectureStreamsPage() {
                   />
                   {s.totalStudentCount}
                 </span>
-              </Td>
-              <Td className="text-xs text-zinc-700">
-                {s.teacher ? (
-                  s.teacher.fullName
-                ) : (
-                  <span className="text-zinc-400">
-                    {t('streams.no_teacher')}
-                  </span>
-                )}
-              </Td>
-              <Td>
-                <StatusBadge status={s.status as AssignmentStatus & StreamStatus}>
-                  {STATUS_COLOR[s.status].label}
-                </StatusBadge>
               </Td>
               <Td>
                 <div className="flex justify-end gap-1">

@@ -37,7 +37,6 @@ const WORKLOAD_TYPES = [
   'lecture',
   'practice',
   'lab',
-  'control',
   'individual_project',
   'course_project',
   'internship',
@@ -175,6 +174,13 @@ export function WorkloadPage() {
     await deleteMut.mutateAsync(item.id).catch(() => {});
   };
 
+  const workloadTypeLabel = (wt: (typeof WORKLOAD_TYPES)[number]) =>
+    wt === 'lecture'
+      ? t('workload.assign_to_teacher.lecture_with_control', {
+          defaultValue: "Ma'ruza (Nazorat)",
+        })
+      : t(`workloadType.${wt}`);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -275,13 +281,14 @@ export function WorkloadPage() {
                   ...q,
                   page: 1,
                   workloadType: v as WorkloadType | undefined,
+                  includeControlWithLecture: v === 'lecture' ? true : undefined,
                 }))
               }
               placeholder={t('workload.all_types')}
               clearable
               options={WORKLOAD_TYPES.map((wt) => ({
                 value: wt,
-                label: t(`workloadType.${wt}`),
+                label: workloadTypeLabel(wt),
               }))}
             />
             <Select
@@ -388,8 +395,9 @@ export function WorkloadPage() {
                 <Td className="text-xs text-zinc-700">
                   {i.lectureStream ? (
                     <span>
-                      {t('workload.stream_of')} {i.lectureStream.totalStudentCount}{' '}
-                      · {t(`language.${i.lectureStream.language}`)}
+                      {i.lectureStream.name || t('workload.stream_of')}{' '}
+                      · {i.lectureStream.totalStudentCount} ·{' '}
+                      {t(`language.${i.lectureStream.language}`)}
                     </span>
                   ) : null}
                   {i.group ? (

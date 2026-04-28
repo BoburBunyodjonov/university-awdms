@@ -33,6 +33,7 @@ export interface WorkloadQuery {
   /** Fall/spring — `subject_offering` bo‘yicha */
   academicTerm?: AcademicTerm;
   workloadType?: WorkloadType;
+  includeControlWithLecture?: boolean;
   category?: WorkloadCategory;
   status?: AssignmentStatus;
   unassignedOnly?: boolean;
@@ -59,6 +60,7 @@ export interface WorkloadItemWithRelations extends WorkloadItem {
   } | null;
   lectureStream: {
     id: string;
+    name: string;
     language: Language;
     totalStudentCount: number;
     status: 'draft' | 'ready' | 'assigned';

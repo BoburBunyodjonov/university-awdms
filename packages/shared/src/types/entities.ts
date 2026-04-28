@@ -126,6 +126,7 @@ export interface FormulaConfig {
 // Section 7.8
 export interface LectureStream {
   id: string;
+  name: string;
   subjectOfferingId: string;
   language: Language;
   totalStudentCount: number;
