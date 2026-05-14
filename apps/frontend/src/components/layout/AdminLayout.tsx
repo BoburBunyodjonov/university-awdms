@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   BarChart3,
   BookOpen,
+  CalendarDays,
   CalendarRange,
   ClipboardList,
   Compass,
@@ -26,6 +27,11 @@ import { cn } from '@/lib/utils';
 // Icon + text for every nav item per §9.3.
 const NAV = [
   { to: '/admin', i18nKey: 'nav.dashboard', icon: LayoutDashboard, end: true },
+  {
+    to: '/admin/academic-years',
+    i18nKey: 'nav.academic_years',
+    icon: CalendarDays,
+  },
   { to: '/admin/teachers', i18nKey: 'nav.teachers', icon: Users },
   { to: '/admin/directions', i18nKey: 'nav.directions', icon: Compass },
   { to: '/admin/groups', i18nKey: 'nav.groups', icon: GraduationCap },

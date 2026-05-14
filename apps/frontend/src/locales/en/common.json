@@ -2,6 +2,7 @@
   "app_name": "AWDMS — Academic Workload",
   "nav": {
     "dashboard": "Dashboard",
+    "academic_years": "Academic years",
     "teachers": "Teachers",
     "directions": "Directions",
     "groups": "Groups",
@@ -15,6 +16,24 @@
     "reports": "Reports",
     "profile": "Profile",
     "logout": "Logout"
+  },
+  "academicYears": {
+    "add": "Add year",
+    "add_title": "Add academic year",
+    "edit_title": "Edit academic year",
+    "intro": "Workload and subject offerings are tied to an academic year. Create at least one year and mark the current one as active (star).",
+    "confirm_delete": "Delete \"{{name}}\"? You can only delete a year that has no workload items.",
+    "deleted": "Academic year deleted",
+    "activated": "\"{{name}}\" is now the active academic year",
+    "make_active": "Set as active year",
+    "active_badge": "Active",
+    "fields": {
+      "name": "Name",
+      "name_hint": "Format: 2026-2027 (four digits, hyphen, four digits)",
+      "startDate": "Start",
+      "endDate": "End",
+      "isActive": "Active year"
+    }
   },
   "auth": {
     "login": "Sign in",
@@ -405,7 +424,11 @@
       "phd_only_short": "PhD",
       "students_over_cap": "At most {{max}} students allowed for this workload type.",
       "group_lock_hint": "One group — one teacher (Rule 12). A duplicate assignment for the same group will be rejected.",
-      "indivisible_hint": "Lecture and practice cannot be split between teachers (Rule 3)."
+      "indivisible_hint": "Lecture and practice cannot be split between teachers (Rule 3).",
+      "no_academic_year": "There is no academic year yet. Open Academic years in the sidebar, add a year, and set it active — then assignments will work.",
+      "pick_academic_year": "Select an academic year.",
+      "offering_not_resolved": "No subject offering matches your selection (term, group, or stream may not line up). Check subject offerings.",
+      "zero_planned_hours": "Calculated hours are 0. Check stream headcount and subject coefficients (lecture/control/practice), or enter a coefficient manually for control if the subject default is 0."
     },
     "categories": {
       "auditorium": "Auditorium hours",

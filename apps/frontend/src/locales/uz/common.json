@@ -2,6 +2,7 @@
   "app_name": "AWDMS — O'quv yuklamasi",
   "nav": {
     "dashboard": "Bosh sahifa",
+    "academic_years": "Akademik yillar",
     "teachers": "O'qituvchilar",
     "directions": "Yo'nalishlar",
     "groups": "Guruhlar",
@@ -15,6 +16,24 @@
     "reports": "Hisobotlar",
     "profile": "Profil",
     "logout": "Chiqish"
+  },
+  "academicYears": {
+    "add": "Yil qo'shish",
+    "add_title": "Akademik yil qo'shish",
+    "edit_title": "Akademik yilni tahrirlash",
+    "intro": "Yuklama va fan yuklamalari akademik yilga bog'langan. Kamida bitta yil yarating va ishlayotgan yilni yulduzcha bilan faollashtiring.",
+    "confirm_delete": "\"{{name}}\" o'chirilsinmi? Yuklama yozuvlari bo'lmasa o'chirish mumkin.",
+    "deleted": "Akademik yil o'chirildi",
+    "activated": "\"{{name}}\" faol akademik yil sifatida belgilandi",
+    "make_active": "Faol yil qilish",
+    "active_badge": "Faol",
+    "fields": {
+      "name": "Nomi",
+      "name_hint": "Format: 2026-2027 (4 raqam, tire, 4 raqam)",
+      "startDate": "Boshlanishi",
+      "endDate": "Tugashi",
+      "isActive": "Faol yil"
+    }
   },
   "auth": {
     "login": "Tizimga kirish",
@@ -423,7 +442,11 @@
       "phd_only_short": "PhD",
       "students_over_cap": "Bu yuklama turi uchun ko'pi bilan {{max}} ta talaba ruxsat etiladi.",
       "group_lock_hint": "Bir guruh — bir o'qituvchi qoidasi (Rule 12). Tanlangan guruh bo'yicha takroriy biriktirish rad etiladi.",
-      "indivisible_hint": "Ma'ruza va amaliyot bo'linib biriktirilmaydi (Rule 3)."
+      "indivisible_hint": "Ma'ruza va amaliyot bo'linib biriktirilmaydi (Rule 3).",
+      "no_academic_year": "Tizimda akademik yil yo'q. Chap menyudan \"Akademik yillar\"ga kiring, yil qo'shing va kerak bo'lsa uni faol qiling — shundan keyin tayinlash ishlaydi.",
+      "pick_academic_year": "Akademik yilni tanlang.",
+      "offering_not_resolved": "Tanlangan fan uchun mos fan yuklamasi (taklif) topilmadi: semestr, guruh yoki oqim mos kelmayapti. Fan yuklamalarini tekshiring.",
+      "zero_planned_hours": "Hisoblangan soat 0. Oqim talabalari yoki fan koeffitsientlari (ma'ruza/nazorat/amaliyot) 0 bo'lmasligi kerak; nazorat uchun koeffitsientni qo'lda ham kiritishingiz mumkin."
     },
     "categories": {
       "auditorium": "Auditoriya soatlari",

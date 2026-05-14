@@ -6,6 +6,7 @@ import { TeacherLayout } from '@/components/layout/TeacherLayout';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { HomePage } from '@/pages/public/HomePage';
 import { LoginPage } from '@/pages/public/LoginPage';
+import { AcademicYearsPage } from '@/pages/admin/AcademicYearsPage';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { AdminTeacherProfilePage } from '@/pages/admin/AdminTeacherProfilePage';
 import { TeachersPage } from '@/pages/admin/TeachersPage';
@@ -46,6 +47,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { index: true, element: <AdminDashboardPage /> },
+      { path: 'academic-years', element: <AcademicYearsPage /> },
       { path: 'teachers/:id', element: <AdminTeacherProfilePage /> },
       { path: 'teachers', element: <TeachersPage /> },
       { path: 'directions', element: <DirectionsPage /> },

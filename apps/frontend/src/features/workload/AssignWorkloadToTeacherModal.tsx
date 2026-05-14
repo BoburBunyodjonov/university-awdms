@@ -357,7 +357,7 @@ function computeHours(
  */
 export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) {
   const { t } = useTranslation();
-  const { data: years } = useAcademicYears();
+  const { data: years, isFetched: academicYearsFetched } = useAcademicYears();
   const createMut = useCreateWorkload();
 
   const activeYearId = years?.find((y) => y.isActive)?.id ?? years?.[0]?.id ?? '';
@@ -608,6 +608,8 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
 
   useEffect(() => {
     if (!spec?.coefficient || !isSubjectCoefficientLinked) return;
+    // Fan koeffitsienti 0 bo'lsa maydonni 0 ga qotirmaymiz — input ochiq qoladi (qo'lda kiritish).
+    if (linkedCoefficient <= 0) return;
     setForm((prev) => {
       if (prev.coefficient === linkedCoefficient) return prev;
       return { ...prev, coefficient: linkedCoefficient };
@@ -697,6 +699,21 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
     !studentOverCap &&
     overNormBy <= 0 &&
     compute.hours > 0;
+
+  /** Fan taklifi ID qidirish uchun kerak bo'lgan maydonlar to'ldirilganmi (xabarni erta chiqarmaslik). */
+  const offeringResolutionPrereqsMet = (() => {
+    if (!spec) return false;
+    if (spec.scope === 'streams_multi') return form.streamIds.length > 0;
+    if (spec.scope === 'groups_multi') return form.groupIds.length > 0;
+    if (spec.scope === 'group') return Boolean(form.groupId);
+    if (spec.scope === 'stream') return Boolean(form.streamId);
+    if (spec.scope === 'group_or_stream') {
+      return form.scopeKind === 'group'
+        ? Boolean(form.groupId)
+        : Boolean(form.streamId);
+    }
+    return true;
+  })();
 
   const onSubmit = async () => {
     if (!workloadType || !effectiveYearId || !canSubmit) return;
@@ -1161,7 +1178,9 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
                         raw === '' ? 0 : Number.parseFloat(raw) || 0,
                     }));
                   }}
-                  disabled={isSubjectCoefficientLinked}
+                  disabled={
+                    isSubjectCoefficientLinked && linkedCoefficient > 0
+                  }
                 />
               </Field>
             ) : null}
@@ -1189,8 +1208,8 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
           </div>
         ) : null}
 
-        {/* Year (shown only if >1 year exists) */}
-        {years && years.length > 1 ? (
+        {/* Year: har doim ko'rsatiladi (≥1 yil) — bitta yil bo'lsa ham ID aniq bo'ladi */}
+        {years && years.length >= 1 ? (
           <Field label={t('nav.academic_years', { defaultValue: 'Yil' })}>
             <Select
               value={effectiveYearId}
@@ -1221,6 +1240,45 @@ export function AssignWorkloadToTeacherModal({ open, onClose, teacher }: Props) 
         </div>
 
         {/* Validation banners (order: blocking errors first, hints second) */}
+        {academicYearsFetched && (years?.length ?? 0) === 0 ? (
+          <ValidationBanner
+            tone="error"
+            text={t('workload.assign_to_teacher.no_academic_year')}
+          />
+        ) : null}
+
+        {!Boolean(effectiveYearId) &&
+        academicYearsFetched &&
+        (years?.length ?? 0) > 0 ? (
+          <ValidationBanner
+            tone="error"
+            text={t('workload.assign_to_teacher.pick_academic_year')}
+          />
+        ) : null}
+
+        {workloadType &&
+        spec?.subject &&
+        form.subjectId &&
+        offeringResolutionPrereqsMet &&
+        !resolvedSubjectOfferingId ? (
+          <ValidationBanner
+            tone="error"
+            text={t('workload.assign_to_teacher.offering_not_resolved')}
+          />
+        ) : null}
+
+        {workloadType &&
+        Boolean(effectiveYearId) &&
+        fieldsFilled &&
+        compute.hours <= 0 &&
+        !degreeMismatch &&
+        !studentOverCap ? (
+          <ValidationBanner
+            tone="error"
+            text={t('workload.assign_to_teacher.zero_planned_hours')}
+          />
+        ) : null}
+
         {degreeMismatch ? (
           <ValidationBanner
             tone="error"
