@@ -51,7 +51,7 @@
   },
   "level": { "bachelor": "Bachelor", "master": "Master" },
   "studyType": { "full_time": "Full-time", "part_time": "Part-time" },
-  "language": { "uzbek": "Uzbek", "russian": "Russian" },
+  "language": { "uzbek": "Uzbek", "russian": "Russian", "eng": "English" },
   "academicTerm": { "fall": "Fall", "spring": "Spring" },
   "workloadType": {
     "lecture": "Lecture",
@@ -348,6 +348,7 @@
     "total_suffix": "items",
     "all_years": "All years",
     "all_teachers": "All teachers",
+    "all_subjects": "All subjects",
     "teachers_filter_401": "Teacher list failed: unauthorized (401). Sign in again as admin, or set VITE_API_BASE_URL to the same API you use to log in.",
     "all_types": "All types",
     "no_teacher": "— not assigned —",

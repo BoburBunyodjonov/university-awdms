@@ -14,12 +14,18 @@ import {
 import { isAxiosError } from 'axios';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
-import type { AcademicTerm, AssignmentStatus, WorkloadType } from '@awdms/shared';
+import type {
+  AcademicTerm,
+  AssignmentStatus,
+  Language,
+  WorkloadType,
+} from '@awdms/shared';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { DataTable, Td, Th } from '@/components/ui/table';
 import { StatusBadge } from '@/components/ui/badge';
 import { useAcademicYears } from '@/features/academic-years/api';
+import { useSubjects } from '@/features/subjects/api';
 import { useTeachers } from '@/features/teachers/api';
 import {
   useDeleteWorkload,
@@ -30,6 +36,7 @@ import {
 } from '@/features/workload/api';
 import { AssignTeacherModal } from '@/features/workload/AssignTeacherModal';
 import { GenerateWorkloadModal } from '@/features/workload/GenerateWorkloadModal';
+import { LANGUAGES } from '@/lib/language';
 import { LIST_PAGE_SIZE_MAX } from '@/lib/pagination';
 import { cn } from '@/lib/utils';
 
@@ -66,6 +73,11 @@ export function WorkloadPage() {
     page: 1,
     pageSize: LIST_PAGE_SIZE_MAX,
   });
+  const { data: subjectsList } = useSubjects({
+    page: 1,
+    pageSize: LIST_PAGE_SIZE_MAX,
+    isActive: true,
+  });
 
   const [query, setQuery] = useState<WorkloadQuery>({ page: 1, pageSize: 50 });
 
@@ -100,6 +112,37 @@ export function WorkloadPage() {
   const [assignTarget, setAssignTarget] =
     useState<WorkloadItemWithRelations | null>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
+
+  const subjectFilterOptions = useMemo(() => {
+    const fromApi = subjectsList?.items ?? [];
+    const byId = new Map(
+      fromApi.map((s) => [
+        s.id,
+        {
+          value: s.id,
+          label: s.name,
+          description: s.code
+            ? `${s.code} · ${s.direction.code}`
+            : s.direction.code,
+        },
+      ]),
+    );
+    for (const row of data?.items ?? []) {
+      const subject = row.subjectOffering?.subject;
+      if (subject && !byId.has(subject.id)) {
+        byId.set(subject.id, {
+          value: subject.id,
+          label: subject.name,
+          description: subject.code
+            ? `${subject.code} · ${subject.direction.code}`
+            : subject.direction.code,
+        });
+      }
+    }
+    return [...byId.values()].sort((a, b) =>
+      a.label.localeCompare(b.label, 'uz'),
+    );
+  }, [subjectsList, data?.items]);
 
   const teacherFilterOptions = useMemo(() => {
     const fromApi = teachersList?.items ?? [];
@@ -252,6 +295,37 @@ export function WorkloadPage() {
                 { value: 'fall', label: t('academicTerm.fall') },
                 { value: 'spring', label: t('academicTerm.spring') },
               ]}
+            />
+            <Select
+              className="w-52 min-w-[12rem]"
+              value={query.subjectId}
+              onValueChange={(v) =>
+                setQuery((q) => ({
+                  ...q,
+                  page: 1,
+                  subjectId: v,
+                }))
+              }
+              placeholder={t('workload.all_subjects')}
+              clearable
+              options={subjectFilterOptions}
+            />
+            <Select
+              className="w-36"
+              value={query.language}
+              onValueChange={(v) =>
+                setQuery((q) => ({
+                  ...q,
+                  page: 1,
+                  language: v as Language | undefined,
+                }))
+              }
+              placeholder={t('groups.all_languages')}
+              clearable
+              options={LANGUAGES.map((lang) => ({
+                value: lang,
+                label: t(`language.${lang}`),
+              }))}
             />
             <div
               className="w-52 min-w-[12rem] shrink-0"

@@ -26,12 +26,15 @@ export interface WorkloadQuery {
   page?: number;
   pageSize?: number;
   academicYearId?: string;
+  subjectId?: string;
   subjectOfferingId?: string;
   lectureStreamId?: string;
   groupId?: string;
   assignedTeacherId?: string;
   /** Fall/spring — `subject_offering` bo‘yicha */
   academicTerm?: AcademicTerm;
+  /** Potok yoki guruh ta'lim tili */
+  language?: Language;
   workloadType?: WorkloadType;
   includeControlWithLecture?: boolean;
   category?: WorkloadCategory;
@@ -101,9 +104,11 @@ const key = (q: WorkloadQuery = {}) => ['workload', q] as const;
 export function useWorkloadItems(query: WorkloadQuery = {}) {
   const hasFilters =
     Boolean(query.academicYearId) ||
+    Boolean(query.subjectId) ||
     Boolean(query.subjectOfferingId) ||
     Boolean(query.assignedTeacherId) ||
     Boolean(query.academicTerm) ||
+    Boolean(query.language) ||
     Boolean(query.workloadType) ||
     Boolean(query.status);
   return useQuery<Paginated<WorkloadItemWithRelations>>({

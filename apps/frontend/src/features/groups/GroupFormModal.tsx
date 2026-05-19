@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Field } from '@/components/ui/field';
 import { useDirections } from '@/features/directions/api';
+import { LANGUAGES } from '@/lib/language';
 import { useCreateGroup, useUpdateGroup } from './api';
 
 interface Props {
@@ -166,8 +167,10 @@ export function GroupFormModal({ open, onClose, group }: Props) {
                 onBlur={field.onBlur}
                 aria-invalid={Boolean(errors.language)}
                 options={[
-                  { value: 'uzbek', label: t('language.uzbek') },
-                  { value: 'russian', label: t('language.russian') },
+                  ...LANGUAGES.map((lang) => ({
+                    value: lang,
+                    label: t(`language.${lang}`),
+                  })),
                 ]}
               />
             )}

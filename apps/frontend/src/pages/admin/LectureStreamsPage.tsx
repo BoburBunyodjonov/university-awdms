@@ -13,6 +13,7 @@ import {
   type StreamsQuery,
 } from '@/features/lecture-streams/api';
 import { LectureStreamFormModal } from '@/features/lecture-streams/LectureStreamFormModal';
+import { LANGUAGES, languageBadgeClass } from '@/lib/language';
 import { cn } from '@/lib/utils';
 
 export function LectureStreamsPage() {
@@ -92,10 +93,10 @@ export function LectureStreamsPage() {
               }
               placeholder={t('groups.all_languages')}
               clearable
-              options={[
-                { value: 'uzbek', label: t('language.uzbek') },
-                { value: 'russian', label: t('language.russian') },
-              ]}
+              options={LANGUAGES.map((lang) => ({
+                value: lang,
+                label: t(`language.${lang}`),
+              }))}
             />
             <Select
               className="w-36"
@@ -189,9 +190,7 @@ export function LectureStreamsPage() {
                 <span
                   className={cn(
                     'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs',
-                    s.language === 'uzbek'
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                      : 'border-sky-200 bg-sky-50 text-sky-800',
+                    languageBadgeClass(s.language),
                   )}
                 >
                   <Languages className="h-3 w-3" aria-hidden="true" />

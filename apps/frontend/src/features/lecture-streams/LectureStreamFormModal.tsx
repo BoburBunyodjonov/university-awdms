@@ -24,6 +24,7 @@ import {
   useUpdateStream,
   type StreamWithRelations,
 } from './api';
+import { languageBadgeClass } from '@/lib/language';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -266,7 +267,7 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
           acc[link.group.language].push(link.groupId);
           return acc;
         },
-        { uzbek: [], russian: [] },
+        { uzbek: [], russian: [], eng: [] },
       );
       return (Object.entries(groupsByLanguage) as [Language, string[]][])
         .filter(([, groupIds]) => groupIds.length > 0)
@@ -457,9 +458,7 @@ export function LectureStreamFormModal({ open, onClose, stream }: Props) {
                           <span
                             className={cn(
                               'inline-flex rounded-full border px-1.5 py-0.5 text-[10px]',
-                              g.language === 'uzbek'
-                                ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                                : 'border-sky-200 bg-sky-50 text-sky-800',
+                              languageBadgeClass(g.language),
                             )}
                           >
                             {t(`language.${g.language}`)}

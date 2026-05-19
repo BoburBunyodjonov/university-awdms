@@ -51,7 +51,7 @@
   },
   "level": { "bachelor": "Bakalavr", "master": "Magistr" },
   "studyType": { "full_time": "Kunduzgi", "part_time": "Sirtqi" },
-  "language": { "uzbek": "O'zbek", "russian": "Rus" },
+  "language": { "uzbek": "O'zbek", "russian": "Rus", "eng": "Ingliz" },
   "academicTerm": { "fall": "Kuzgi", "spring": "Bahorgi" },
   "workloadType": {
     "lecture": "Ma'ruza",
@@ -366,6 +366,7 @@
     "total_suffix": "element",
     "all_years": "Barcha yillar",
     "all_teachers": "Barcha o'qituvchilar",
+    "all_subjects": "Barcha fanlar",
     "teachers_filter_401": "O'qituvchilar ro'yxati yuklanmadi: ruxsatsiz (401). Admin sifatida qayta kiring yoki VITE_API_BASE_URL login qilgan backend'ga mos ekanini tekshiring.",
     "all_types": "Barcha turlar",
     "no_teacher": "— biriktirilmagan —",

@@ -51,7 +51,7 @@
   },
   "level": { "bachelor": "Бакалавриат", "master": "Магистратура" },
   "studyType": { "full_time": "Очная", "part_time": "Заочная" },
-  "language": { "uzbek": "Узбекский", "russian": "Русский" },
+  "language": { "uzbek": "Узбекский", "russian": "Русский", "eng": "Английский" },
   "academicTerm": { "fall": "Осенний", "spring": "Весенний" },
   "workloadType": {
     "lecture": "Лекция",
@@ -348,6 +348,7 @@
     "total_suffix": "элементов",
     "all_years": "Все годы",
     "all_teachers": "Все преподаватели",
+    "all_subjects": "Все предметы",
     "teachers_filter_401": "Список преподавателей не загрузился: не авторизован (401). Войдите снова как admin или проверьте, что VITE_API_BASE_URL указывает на тот же API, что и при входе.",
     "all_types": "Все типы",
     "no_teacher": "— не назначен —",

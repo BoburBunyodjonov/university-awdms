@@ -41,6 +41,7 @@ enum AcademicTerm {
 enum Language {
   uzbek
   russian
+  eng
 }
 
 // Covers all workload types from Section 2.1 and 4.7

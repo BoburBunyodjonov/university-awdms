@@ -9,7 +9,7 @@ export type StudyType = 'full_time' | 'part_time';
 
 export type AcademicTerm = 'fall' | 'spring';
 
-export type Language = 'uzbek' | 'russian';
+export type Language = 'uzbek' | 'russian' | 'eng';
 
 export type WorkloadType =
   | 'lecture'

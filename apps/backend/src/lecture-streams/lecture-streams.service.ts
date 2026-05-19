@@ -263,7 +263,7 @@ export class LectureStreamsService {
   private async validateGroupsForOffering(
     subjectOfferingId: string,
     groupIds: string[],
-    language: 'uzbek' | 'russian',
+    language: 'uzbek' | 'russian' | 'eng',
     excludeStreamId?: string,
   ) {
     if (!groupIds.length) {

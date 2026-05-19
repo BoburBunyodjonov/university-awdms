@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { FormulaConfig, Prisma } from '@prisma/client';
+import { Language, type FormulaConfig, type Prisma } from '@prisma/client';
 import {
   categoryOf,
   isIndivisibleAuditoriumWorkload,
@@ -114,6 +114,24 @@ export class WorkloadService {
   ) {}
 
   async list(q: WorkloadQueryDto) {
+    const subjectOfferingWhere: Prisma.SubjectOfferingWhereInput | undefined =
+      q.academicTerm || q.subjectId
+        ? {
+            ...(q.academicTerm ? { academicTerm: q.academicTerm } : {}),
+            ...(q.subjectId ? { subjectId: q.subjectId } : {}),
+          }
+        : undefined;
+
+    const language = q.language as Language | undefined;
+    const languageWhere: Prisma.WorkloadItemWhereInput | undefined = language
+      ? {
+          OR: [
+            { lectureStream: { is: { language } } },
+            { group: { is: { language } } },
+          ],
+        }
+      : undefined;
+
     const where: Prisma.WorkloadItemWhereInput = {
       ...(q.academicYearId ? { academicYearId: q.academicYearId } : {}),
       ...(q.subjectOfferingId
@@ -129,9 +147,10 @@ export class WorkloadService {
           ? { workloadType: { in: ['lecture', 'control'] } }
           : { workloadType: q.workloadType }
         : {}),
-      ...(q.academicTerm
-        ? { subjectOffering: { is: { academicTerm: q.academicTerm } } }
+      ...(subjectOfferingWhere
+        ? { subjectOffering: { is: subjectOfferingWhere } }
         : {}),
+      ...languageWhere,
       ...(q.category ? { category: q.category } : {}),
       ...(q.status ? { status: q.status } : {}),
       ...(q.unassignedOnly ? { assignedTeacherId: null } : {}),

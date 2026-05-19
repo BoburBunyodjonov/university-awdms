@@ -14,6 +14,7 @@ import {
   type GroupsQuery,
 } from '@/features/groups/api';
 import { GroupFormModal } from '@/features/groups/GroupFormModal';
+import { LANGUAGES, languageBadgeClass } from '@/lib/language';
 import { cn } from '@/lib/utils';
 
 export function GroupsPage() {
@@ -101,10 +102,10 @@ export function GroupsPage() {
               }
               placeholder={t('groups.all_languages')}
               clearable
-              options={[
-                { value: 'uzbek', label: t('language.uzbek') },
-                { value: 'russian', label: t('language.russian') },
-              ]}
+              options={LANGUAGES.map((lang) => ({
+                value: lang,
+                label: t(`language.${lang}`),
+              }))}
             />
             {isFetching ? (
               <span className="text-xs text-zinc-400">
@@ -185,9 +186,7 @@ export function GroupsPage() {
                 <span
                   className={cn(
                     'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs',
-                    g.language === 'uzbek'
-                      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                      : 'border-sky-200 bg-sky-50 text-sky-800',
+                    languageBadgeClass(g.language),
                   )}
                 >
                   <Languages className="h-3 w-3" aria-hidden="true" />

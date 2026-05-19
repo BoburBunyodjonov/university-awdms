@@ -4,7 +4,7 @@ export const UserRoleEnum = z.enum(['admin', 'teacher', 'student', 'guest']);
 export const StudyLevelEnum = z.enum(['bachelor', 'master']);
 export const StudyTypeEnum = z.enum(['full_time', 'part_time']);
 export const AcademicTermEnum = z.enum(['fall', 'spring']);
-export const LanguageEnum = z.enum(['uzbek', 'russian']);
+export const LanguageEnum = z.enum(['uzbek', 'russian', 'eng']);
 
 export const WorkloadTypeEnum = z.enum([
   'lecture',
